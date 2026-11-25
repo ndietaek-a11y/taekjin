@@ -1,0 +1,3978 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="우리 부부 가계부" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>우리 부부 가계부</title>
+
+  <!-- Dynamic App Icons (Populated at load by generateCoupleAppIcon) -->
+  <link id="appleTouchIconLink" rel="apple-touch-icon" sizes="180x180" href="" />
+  <link id="faviconLink" rel="icon" type="image/png" href="" />
+
+  <!-- Fonts: Inter + Pretendard fallback -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', '"Apple SD Gothic Neo"', '"Malgun Gothic"', 'sans-serif'],
+          },
+          colors: {
+            husband: {
+              bg: '#eff6ff',
+              text: '#1d4ed8',
+              bar: '#3b82f6',
+            },
+            wife: {
+              bg: '#fdf2f8',
+              text: '#be185d',
+              bar: '#ec4899',
+            },
+            shared: {
+              bg: '#f5f3ff',
+              text: '#6d28d9',
+              bar: '#8b5cf6',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* 60fps+ Smooth Mobile PWA & Zoom Lock Styles */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #f7f8fa;
+      color: #111827;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+      touch-action: manipulation;
+      -webkit-text-size-adjust: 100%;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    input, textarea, select {
+      user-select: auto;
+      -webkit-user-select: auto;
+      touch-action: manipulation;
+    }
+
+    /* Prevent iOS Safari auto-zoom on input focus */
+    @media (max-width: 768px) {
+      input[type="text"],
+      input[type="number"],
+      input[type="email"],
+      input[type="password"],
+      input[type="date"],
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+
+    /* GPU Accelerated Layer */
+    .gpu-layer {
+      transform: translate3d(0, 0, 0);
+      will-change: transform;
+    }
+
+    /* Tactile Micro-Animations for Buttons */
+    button, label[for] {
+      touch-action: manipulation;
+      transition: transform 130ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.955) translate3d(0, 0, 0);
+    }
+
+    .btn-primary-react:active:not(:disabled) {
+      background-color: #2563eb !important;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+      transform: scale(0.96) translate3d(0, 0, 0);
+    }
+
+    .btn-copied-flash {
+      background-color: #10b981 !important;
+      color: #ffffff !important;
+      border-color: #10b981 !important;
+    }
+
+    /* Modal Smooth Pop-in */
+    @keyframes modalSlideUp {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 18px, 0) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    .modal-card-anim {
+      animation: modalSlideUp 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Custom Scrollbar Hide */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f7f8fa]">
+
+  <!-- App Container (Mobile-First Centered Shell) -->
+  <div id="appShell" class="max-w-lg mx-auto min-h-screen bg-[#f7f8fa] flex flex-col relative shadow-[0_0_40px_rgba(0,0,0,0.03)]">
+
+    <!-- ========================================== -->
+    <!-- TOP HEADER (Sticky, No Heavy Blur for 60fps) -->
+    <!-- ========================================== -->
+    <header class="sticky top-0 z-30 bg-white border-b border-gray-100/90 gpu-layer pt-[env(safe-area-inset-top)]">
+      <div class="px-4 py-3 flex items-center justify-between gap-2">
+        <!-- Brand & Sync Status -->
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div id="headerAvatarsWrap" class="flex -space-x-2 shrink-0 cursor-pointer" title="부부 프로필·사진 꾸미기">
+            <div class="w-8 h-8 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center shadow-sm text-sm">👨</div>
+            <div class="w-8 h-8 rounded-full border-2 border-white bg-pink-100 flex items-center justify-center shadow-sm text-sm">👩</div>
+          </div>
+          <div class="min-w-0">
+            <h1 id="headerAppTitle" class="text-[15px] font-extrabold text-gray-900 tracking-tight truncate">우리 부부 가계부</h1>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="syncDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+              <span id="roomBadgeText" class="text-[11px] font-medium text-gray-400 truncate">연결 준비 중...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons: Security / My Role (남편·아내) / Settings -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="openSecurityBtn" type="button" class="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center gap-1" aria-label="보안 잠금 설정">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span class="text-xs font-bold hidden sm:inline">보안</span>
+          </button>
+          <button id="openMyRoleBtn" type="button" class="px-2.5 py-2 rounded-xl bg-husband-bg hover:bg-blue-100 text-husband-text flex items-center gap-1" aria-label="내 정보(남편/아내) 선택">
+            <span id="myRoleBtnEmoji" class="text-xs leading-none">👨</span>
+            <span id="myRoleBtnLabel" class="text-xs font-bold">남편</span>
+          </button>
+          <button id="openSettingsBtn" type="button" class="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center gap-1" aria-label="부부 공유 설정">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span class="text-xs font-medium hidden sm:inline">설정</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Month Navigator Bar -->
+      <div class="px-4 pb-2.5 flex items-center justify-between">
+        <button id="prevMonthBtn" type="button" class="w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 flex items-center justify-center" aria-label="이전 달">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+
+        <button id="openMonthPickerBtn" type="button" class="px-3.5 py-1.5 rounded-xl hover:bg-gray-50 flex items-center gap-1.5 text-sm font-bold text-gray-900">
+          <span id="currentMonthLabel">2026년 11월</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400"></i>
+        </button>
+
+        <button id="nextMonthBtn" type="button" class="w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 flex items-center justify-center" aria-label="다음 달">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- MAIN CONTENT AREA                          -->
+    <!-- ========================================== -->
+    <main class="flex-1 px-4 py-4 pb-[calc(9.25rem+env(safe-area-inset-bottom))]">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: DASHBOARD (월간 요약 & 예산 관리)     -->
+      <!-- ========================================== -->
+      <section id="view-dashboard" class="tab-panel space-y-4">
+
+        <!-- Couple Wedding Photo Banner Card -->
+        <div id="coupleBannerCard" class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-rose-400 via-pink-400 to-violet-400 p-4 text-white shadow-[0_4px_20px_rgba(236,72,153,0.18)] cursor-pointer min-h-[104px] flex items-end">
+          <img id="coupleBannerImg" src="" alt="부부 배너 사진" class="hidden absolute inset-0 w-full h-full object-cover" />
+          <div id="coupleBannerOverlay" class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent"></div>
+          <div class="relative z-10 w-full flex items-end justify-between gap-2">
+            <div>
+              <p class="text-[11px] font-semibold text-white/85">💍 함께 쓰는 신혼 살림</p>
+              <h2 id="bannerCoupleTitle" class="text-base font-extrabold tracking-tight mt-0.5">우리 부부 가계부</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-white/20 text-[11px] font-semibold text-white shrink-0">사진 꾸미기</span>
+          </div>
+        </div>
+
+        <!-- Monthly Total Spend & Budget Card -->
+        <div class="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-xs font-semibold text-gray-400">이번 달 총 지출</p>
+              <p id="dashTotalAmount" class="text-3xl font-extrabold text-gray-900 tracking-tight mt-1">0원</p>
+            </div>
+            <button id="openBudgetBtn" type="button" class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 flex items-center gap-1 shrink-0">
+              <span>예산</span>
+              <span id="dashBudgetLabel" class="font-bold text-gray-900">2,000,000원</span>
+            </button>
+          </div>
+
+          <!-- 3-Column Breakdown: 일시불 / 할부 / 고정 -->
+          <div class="grid grid-cols-3 gap-2 mt-4">
+            <div class="rounded-2xl bg-gray-50 px-3 py-2.5 border border-gray-100">
+              <p class="text-[11px] font-medium text-gray-500">일시불 지출</p>
+              <p id="dashRegularAmount" class="text-xs font-bold text-gray-900 mt-0.5 truncate">0원</p>
+            </div>
+            <div class="rounded-2xl bg-indigo-50/70 px-3 py-2.5 border border-indigo-100/70">
+              <p class="text-[11px] font-medium text-indigo-600">할부 월납부</p>
+              <p id="dashInstallmentAmount" class="text-xs font-bold text-indigo-950 mt-0.5 truncate">0원</p>
+            </div>
+            <div class="rounded-2xl bg-emerald-50/70 px-3 py-2.5 border border-emerald-100/70">
+              <p class="text-[11px] font-medium text-emerald-600">고정 지출</p>
+              <p id="dashFixedAmount" class="text-xs font-bold text-emerald-950 mt-0.5 truncate">0원</p>
+            </div>
+          </div>
+
+          <!-- 2-Column Payment Method Breakdown: 카드 vs 현금·이체 -->
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <div class="rounded-2xl bg-slate-50 px-3 py-2 border border-slate-100 flex items-center justify-between gap-1.5">
+              <span class="text-[11px] font-semibold text-slate-500 shrink-0">💳 카드</span>
+              <span id="dashCardAmount" class="text-xs font-bold text-slate-800 truncate">0원</span>
+            </div>
+            <div class="rounded-2xl bg-amber-50/80 px-3 py-2 border border-amber-100 flex items-center justify-between gap-1.5">
+              <span class="text-[11px] font-semibold text-amber-700 shrink-0">💵 현금·이체</span>
+              <span id="dashCashAmount" class="text-xs font-bold text-amber-900 truncate">0원</span>
+            </div>
+          </div>
+
+          <!-- Budget Progress Bar -->
+          <div class="mt-4 pt-3.5 border-t border-gray-100">
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span id="dashBudgetStatusText" class="font-semibold text-gray-600">예산 대비 0% 사용</span>
+              <span id="dashBudgetRemainText" class="font-bold text-emerald-600">2,000,000원 남음</span>
+            </div>
+            <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+              <div id="dashBudgetBar" class="h-full bg-gray-900 rounded-full transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW: Real-Time Cash Balance Card (현금 입금 & 실시간 보유 잔액) -->
+        <div class="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100 space-y-3.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-gray-900">💵 실시간 현금 보유 잔액</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">누적 현금 잔액 (매월 자동 이월 · 적금·지출 반영)</p>
+            </div>
+            <button id="openAddIncomeBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shrink-0 btn-primary-react">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>현금 입금</span>
+            </button>
+          </div>
+
+          <!-- Scope Toggle: 남편 / 아내 / 공동 -->
+          <div class="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl">
+            <button type="button" data-cash-scope="남편" class="cash-scope-btn py-1.5 rounded-lg text-xs font-medium text-gray-500">👨 남편</button>
+            <button type="button" data-cash-scope="아내" class="cash-scope-btn py-1.5 rounded-lg text-xs font-medium text-gray-500">👩 아내</button>
+            <button type="button" data-cash-scope="공동" class="cash-scope-btn py-1.5 rounded-lg text-xs font-bold bg-white text-gray-900 shadow-sm">💑 공동</button>
+          </div>
+
+          <!-- Balance Display -->
+          <div class="rounded-2xl bg-emerald-50/75 border border-emerald-100/90 p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span id="dashCashScopeLabel" class="text-xs font-semibold text-emerald-700">이번 달 남음 현금 잔액</span>
+              <button id="openIncomeListBtn" type="button" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 underline underline-offset-2 shrink-0">
+                이번 달 입금 내역 (<span id="dashIncomeCountLabel">0</span>건)
+              </button>
+            </div>
+            <p id="dashCashBalanceAmount" class="text-2xl font-extrabold text-gray-900 tracking-tight mt-1">0원</p>
+
+            <!-- Husband + Wife Split (Shown when '공동' is selected) -->
+            <div id="dashCashSplitRow" class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-emerald-200/60">
+              <div class="bg-white/85 rounded-xl px-3 py-2 flex items-center justify-between gap-1">
+                <span class="text-[11px] font-semibold text-husband-text shrink-0">👨 남편</span>
+                <span id="dashCashHusbandBal" class="text-xs font-extrabold text-gray-900 truncate">0원</span>
+              </div>
+              <div class="bg-white/85 rounded-xl px-3 py-2 flex items-center justify-between gap-1">
+                <span class="text-[11px] font-semibold text-wife-text shrink-0">👩 아내</span>
+                <span id="dashCashWifeBal" class="text-xs font-extrabold text-gray-900 truncate">0원</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- This Month Cash Flow Mini Summary -->
+          <div class="grid grid-cols-3 gap-1.5">
+            <div class="rounded-xl bg-gray-50 px-2.5 py-2 border border-gray-100">
+              <p class="text-[10px] font-medium text-gray-500">이번 달 입금</p>
+              <p id="dashCashMonthIn" class="text-xs font-bold text-emerald-600 mt-0.5 truncate">+0원</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 px-2.5 py-2 border border-gray-100">
+              <p id="dashCashThisBillLabel" class="text-[10px] font-medium text-indigo-600">이번 달 결제예정</p>
+              <p id="dashCashThisBillAmt" class="text-xs font-bold text-indigo-700 mt-0.5 truncate">-0원</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 px-2.5 py-2 border border-gray-100">
+              <p class="text-[10px] font-medium text-gray-500">이번 달 현금출금</p>
+              <p id="dashCashMonthOut" class="text-xs font-bold text-rose-600 mt-0.5 truncate">-0원</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW: Next Month Expected Payment Card (다음 달 결제 예정 금액) -->
+        <div class="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100 space-y-3.5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h3 id="dashNextMonthTitle" class="text-sm font-bold text-gray-900">📅 다음 달 결제 예정 금액</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">이번 달 카드값 + 다음 달 할부 + 고정지출</p>
+            </div>
+            <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold shrink-0">청구 예정</span>
+          </div>
+
+          <!-- Scope Toggle: 남편 / 아내 / 공동 -->
+          <div class="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl">
+            <button type="button" data-next-scope="남편" class="next-scope-btn py-1.5 rounded-lg text-xs font-medium text-gray-500">👨 남편</button>
+            <button type="button" data-next-scope="아내" class="next-scope-btn py-1.5 rounded-lg text-xs font-medium text-gray-500">👩 아내</button>
+            <button type="button" data-next-scope="공동" class="next-scope-btn py-1.5 rounded-lg text-xs font-bold bg-white text-gray-900 shadow-sm">💑 공동</button>
+          </div>
+
+          <!-- Total Expected Display -->
+          <div class="rounded-2xl bg-indigo-50/75 border border-indigo-100/90 p-4">
+            <p id="dashNextScopeLabel" class="text-xs font-semibold text-indigo-700">남편 + 아내 다음 달 총 결제 예정</p>
+            <p id="dashNextTotalAmount" class="text-2xl font-extrabold text-gray-900 tracking-tight mt-1">0원</p>
+
+            <!-- Husband + Wife Split (Shown when '공동' is selected) -->
+            <div id="dashNextSplitRow" class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-indigo-200/60">
+              <div class="bg-white/85 rounded-xl px-3 py-2 flex items-center justify-between gap-1">
+                <span class="text-[11px] font-semibold text-husband-text shrink-0">👨 남편</span>
+                <span id="dashNextHusbandAmt" class="text-xs font-extrabold text-gray-900 truncate">0원</span>
+              </div>
+              <div class="bg-white/85 rounded-xl px-3 py-2 flex items-center justify-between gap-1">
+                <span class="text-[11px] font-semibold text-wife-text shrink-0">👩 아내</span>
+                <span id="dashNextWifeAmt" class="text-xs font-extrabold text-gray-900 truncate">0원</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3-Column Breakdown: 이번 달 카드값 / 다음 달 할부 / 고정지출 -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-xl bg-gray-50 px-2.5 py-2 border border-gray-100">
+              <p class="text-[10px] font-medium text-gray-500">💳 이번 달 카드</p>
+              <p id="dashNextCardAmt" class="text-xs font-bold text-gray-900 mt-0.5 truncate">0원</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 px-2.5 py-2 border border-gray-100">
+              <p id="dashNextInstLabel" class="text-[10px] font-medium text-indigo-600">🗓️ 다음 달 할부</p>
+              <p id="dashNextInstAmt" class="text-xs font-bold text-indigo-950 mt-0.5 truncate">0원</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 px-2.5 py-2 border border-gray-100">
+              <p class="text-[10px] font-medium text-emerald-600">🔁 고정 지출</p>
+              <p id="dashNextFixedAmt" class="text-xs font-bold text-emerald-950 mt-0.5 truncate">0원</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payer Comparison Card (남편 vs 아내) -->
+        <div class="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
+          <div class="flex items-center justify-between mb-3.5">
+            <div>
+              <h3 class="text-sm font-bold text-gray-900">결제자별 지출 비교</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">할부는 총액이 아닌 이번 달 납부액으로 합산됩니다</p>
+            </div>
+            <span id="dashCountBadge" class="text-xs font-medium text-gray-400">총 0건</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5 mb-3">
+            <!-- Husband -->
+            <div class="rounded-2xl bg-husband-bg/75 p-3.5 border border-blue-100/70">
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span id="dashHusbandAvatar" class="shrink-0">👨</span>
+                  <span class="text-xs font-semibold text-husband-text truncate">남편</span>
+                </div>
+                <span id="dashHusbandPct" class="text-xs font-bold text-husband-text shrink-0">0%</span>
+              </div>
+              <p id="dashHusbandAmount" class="text-base font-bold text-gray-900 mt-1.5 tracking-tight truncate">0원</p>
+            </div>
+            <!-- Wife (아내) -->
+            <div class="rounded-2xl bg-wife-bg/75 p-3.5 border border-pink-100/70">
+              <div class="flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span id="dashWifeAvatar" class="shrink-0">👩</span>
+                  <span class="text-xs font-semibold text-wife-text truncate">아내</span>
+                </div>
+                <span id="dashWifePct" class="text-xs font-bold text-wife-text shrink-0">0%</span>
+              </div>
+              <p id="dashWifeAmount" class="text-base font-bold text-gray-900 mt-1.5 tracking-tight truncate">0원</p>
+            </div>
+          </div>
+
+          <!-- Stacked Ratio Bar (Husband vs Wife) -->
+          <div class="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden flex">
+            <div id="dashBarHusband" class="h-full bg-husband-bar transition-all duration-300" style="width: 0%;"></div>
+            <div id="dashBarWife" class="h-full bg-wife-bar transition-all duration-300" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Category Breakdown Card -->
+        <div class="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
+          <div class="flex items-center justify-between mb-3.5">
+            <h3 class="text-sm font-bold text-gray-900">카테고리별 지출</h3>
+            <span class="text-[11px] text-gray-400">높은 금액순</span>
+          </div>
+          <div id="dashCategoryList" class="space-y-3">
+            <p class="text-xs text-gray-400 text-center py-4">이번 달 지출 내역이 아직 없습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: EXPENSE LIST (지출 내역 & 필터)      -->
+      <!-- ========================================== -->
+      <section id="view-list" class="tab-panel hidden space-y-4">
+        <!-- Filter Bar -->
+        <div class="bg-white rounded-2xl p-3 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 space-y-2.5">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <!-- Payer Pills (전체 / 남편 / 아내) -->
+            <div class="flex bg-gray-100 p-1 rounded-xl">
+              <button type="button" data-payer-filter="전체" class="payer-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-gray-900 shadow-sm">전체</button>
+              <button type="button" data-payer-filter="남편" class="payer-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500">남편</button>
+              <button type="button" data-payer-filter="아내" class="payer-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500">아내</button>
+            </div>
+
+            <!-- Category Select -->
+            <select id="categoryFilterSelect" class="text-xs font-medium bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-gray-700 focus:outline-none">
+              <option value="전체">전체 카테고리</option>
+              <option value="식비">🍽️ 식비</option>
+              <option value="카페·간식">☕ 카페·간식</option>
+              <option value="장보기·생활">🛒 장보기·생활</option>
+              <option value="교통·차량">🚗 교통·차량</option>
+              <option value="쇼핑·의류">🛍️ 쇼핑·의류</option>
+              <option value="주거·관리">🏠 주거·관리</option>
+              <option value="의료·건강">🏥 의료·건강</option>
+              <option value="문화·여행">✈️ 문화·여행</option>
+              <option value="경조사·선물">🎁 경조사·선물</option>
+              <option value="구독·통신">📱 구독·통신</option>
+              <option value="기타">📌 기타</option>
+            </select>
+          </div>
+
+          <!-- Payment Method Filter Pills -->
+          <div class="flex items-center gap-1.5">
+            <button type="button" data-method-filter="전체" class="method-filter-btn flex-1 py-1.5 rounded-xl text-xs font-bold bg-gray-900 text-white">전체 수단</button>
+            <button type="button" data-method-filter="카드" class="method-filter-btn flex-1 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600">💳 카드</button>
+            <button type="button" data-method-filter="현금" class="method-filter-btn flex-1 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600">💵 현금·이체</button>
+          </div>
+
+          <div class="flex items-center justify-between px-1 pt-1.5 border-t border-gray-100 text-xs text-gray-500">
+            <span id="listFilterCount">총 0건 (변동 + 할부)</span>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-gray-900" id="listFilterSum">0원</span>
+              <button id="toggleBulkDeleteBtn" type="button" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold flex items-center gap-1">
+                <span>🗑️ 선택 삭제</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bulk Delete Selection Control Bar (Shown in Bulk Delete Mode) -->
+          <div id="bulkDeleteControlBar" class="hidden pt-2 border-t border-rose-100 flex items-center justify-between gap-2">
+            <label class="flex items-center gap-2 cursor-pointer px-1">
+              <input id="bulkSelectAllCheckbox" type="checkbox" class="w-4 h-4 rounded accent-rose-600" />
+              <span class="text-xs font-bold text-gray-800">전체 선택 (<span id="bulkSelectedCountText">0</span>건)</span>
+            </label>
+            <div class="flex items-center gap-1.5">
+              <button id="cancelBulkDeleteBtn" type="button" class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold">취소</button>
+              <button id="confirmBulkDeleteBtn" type="button" class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm">선택 삭제 (0건)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grouped Expense List Container -->
+        <div id="expenseListContainer" class="space-y-3"></div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: FIXED & INSTALLMENTS (고정지출·할부)  -->
+      <!-- ========================================== -->
+      <section id="view-recurring" class="tab-panel hidden space-y-5">
+        <!-- Fixed Expenses Section -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between px-1">
+            <div>
+              <h3 class="text-sm font-bold text-gray-900">매월 고정 지출</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">월세·대출·관리비·통신비 등 매월 자동 합산</p>
+            </div>
+            <button id="openAddFixedBtn" type="button" class="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-xs font-bold flex items-center gap-1 btn-primary-react">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>고정 추가</span>
+            </button>
+          </div>
+
+          <div class="bg-emerald-50/70 rounded-2xl px-4 py-3 border border-emerald-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-700">활성 고정지출 월 합계</span>
+            <span id="recurringFixedSum" class="text-sm font-extrabold text-emerald-950">0원</span>
+          </div>
+
+          <div id="fixedListContainer" class="space-y-2.5"></div>
+        </div>
+
+        <!-- Active Installments Section -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between px-1">
+            <div>
+              <h3 class="text-sm font-bold text-gray-900">진행 중인 할부</h3>
+              <p class="text-[11px] text-gray-400 mt-0.5">할부 개월수에 맞춰 매달 자동으로 나뉘어 계산돼요</p>
+            </div>
+            <button id="openAddInstallmentBtn" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-1 btn-primary-react">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>할부 추가</span>
+            </button>
+          </div>
+
+          <div class="bg-indigo-50/70 rounded-2xl px-4 py-3 border border-indigo-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-indigo-700">이번 달 할부 납부액 합계</span>
+            <span id="recurringInstSum" class="text-sm font-extrabold text-indigo-950">0원</span>
+          </div>
+
+          <div id="installmentListContainer" class="space-y-2.5"></div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: AI CAPTURE (스크린샷 자동 등록)       -->
+      <!-- ========================================== -->
+      <section id="view-capture" class="tab-panel hidden space-y-4">
+        <!-- Step 1: Payer Selection & Upload (남편 / 아내 2인 전용) -->
+        <div id="captureUploadPanel" class="space-y-4">
+          <div class="bg-white rounded-3xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
+            <label class="block text-xs font-semibold text-gray-500 mb-3">1. 누구의 이용내역인가요?</label>
+            <div class="grid grid-cols-2 gap-2.5">
+              <button type="button" data-capture-payer="남편" class="capture-payer-btn py-3.5 px-3 rounded-2xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-sm flex items-center justify-center gap-1.5">
+                <span>👨 남편</span>
+              </button>
+              <button type="button" data-capture-payer="아내" class="capture-payer-btn py-3.5 px-3 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-sm flex items-center justify-center gap-1.5">
+                <span>👩 아내</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-3xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100">
+            <label class="block text-xs font-semibold text-gray-500 mb-3">2. 카드·은행 이용내역 캡처 올리기</label>
+
+            <label for="captureFileInput" class="block w-full cursor-pointer">
+              <div class="border-2 border-dashed border-gray-200 hover:border-gray-400 bg-gray-50/70 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                <div class="w-14 h-14 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-800 mb-3.5">
+                  <i data-lucide="image-plus" class="w-7 h-7"></i>
+                </div>
+                <p class="text-sm font-bold text-gray-900">스크린샷 선택 또는 촬영 (최대 10장)</p>
+                <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                  여러 장의 캡처 화면을 한 번에 골라도 괜찮아요.<br />
+                  AI가 날짜·가맹점·금액·<strong>카드/현금이체·할부</strong>까지 모두 모아 정리합니다.
+                </p>
+                <span class="mt-4 px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-sm">
+                  앨범에서 캡처 여러 장 불러오기
+                </span>
+              </div>
+              <input id="captureFileInput" type="file" accept="image/*" multiple class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 2: Loading Panel -->
+        <div id="captureLoadingPanel" class="hidden bg-white rounded-3xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-gray-100 text-center space-y-4">
+          <div class="relative w-32 h-44 mx-auto rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+            <img id="capturePreviewImg" src="" alt="업로드 이미지" class="w-full h-full object-cover opacity-80" />
+            <div class="absolute inset-0 bg-gray-900/20 flex items-center justify-center">
+              <div class="w-9 h-9 border-4 border-white/40 border-t-white rounded-full animate-spin"></div>
+            </div>
+            <span id="captureBatchBadge" class="hidden absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-gray-900/80 text-white text-[10px] font-bold">1 / 1장</span>
+          </div>
+          <div>
+            <p id="captureLoadingTitle" class="text-sm font-bold text-gray-900">AI가 이용내역을 분석하고 있어요</p>
+            <p id="captureLoadingSub" class="text-xs text-gray-400 mt-1">카드/현금·이체 구분과 할부 내역까지 자동으로 확인 중...</p>
+          </div>
+        </div>
+
+        <!-- Step 3: Review & Batch Save Panel -->
+        <div id="captureReviewPanel" class="hidden space-y-3">
+          <div class="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm flex items-center justify-between gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="reviewSelectAllCheckbox" type="checkbox" checked class="w-4 h-4 rounded accent-gray-900" />
+              <span class="text-xs font-bold text-gray-900">전체 선택 (<span id="reviewCountLabel">0</span>건)</span>
+            </label>
+            <div class="flex items-center gap-1.5">
+              <button id="addManualReviewRowBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold">+ 행 추가</button>
+              <button id="resetCaptureBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold">다시 올리기</button>
+            </div>
+          </div>
+
+          <div id="reviewItemsContainer" class="space-y-2.5"></div>
+
+          <!-- Sticky Bottom Batch Save Bar (Safe-area aware) -->
+          <div class="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 pt-2">
+            <button id="batchSaveBtn" type="button" class="w-full py-4 px-5 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white font-bold text-sm shadow-lg shadow-gray-900/20 flex items-center justify-center gap-2 btn-primary-react">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span id="batchSaveBtnText">선택한 0건 일괄 저장</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- FLOATING ACTION BUTTON (iOS Safe-Area Fixed)-->
+    <!-- ========================================== -->
+    <button id="fabAddBtn" type="button" class="fixed bottom-[calc(5.6rem+env(safe-area-inset-bottom))] right-4 sm:right-[calc(50%-236px)] z-20 px-4 py-3.5 rounded-full bg-gray-900 hover:bg-gray-800 text-white shadow-[0_8px_24px_rgba(17,24,39,0.28)] flex items-center gap-1.5 gpu-layer btn-primary-react" aria-label="직접 입력">
+      <i data-lucide="plus" class="w-4 h-4"></i>
+      <span class="text-xs font-bold">직접 입력</span>
+    </button>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM NAVIGATION BAR (Safe-Area Aware)     -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-30 bg-white border-t border-gray-100 gpu-layer pb-[env(safe-area-inset-bottom)]">
+      <div class="grid grid-cols-4 px-2 py-2">
+        <button type="button" data-tab="dashboard" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-900">
+          <i data-lucide="layout-dashboard" class="w-5 h-5 mb-0.5"></i>
+          <span class="text-[11px] font-bold">대시보드</span>
+        </button>
+        <button type="button" data-tab="list" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-400">
+          <i data-lucide="receipt-text" class="w-5 h-5 mb-0.5"></i>
+          <span class="text-[11px] font-medium">지출 내역</span>
+        </button>
+        <button type="button" data-tab="recurring" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-400">
+          <i data-lucide="repeat" class="w-5 h-5 mb-0.5"></i>
+          <span class="text-[11px] font-medium">고정·할부</span>
+        </button>
+        <button type="button" data-tab="capture" class="nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-400">
+          <i data-lucide="scan-line" class="w-5 h-5 mb-0.5"></i>
+          <span class="text-[11px] font-medium">캡처 등록</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALS                                     -->
+  <!-- ========================================== -->
+
+  <!-- 1. Manual Expense / Installment Add & Edit Modal -->
+  <div id="expenseModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="expenseModalTitle" class="text-base font-bold text-gray-900">지출 직접 입력</h3>
+        <button type="button" onclick="closeModal('expenseModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="expenseForm" class="space-y-4">
+        <input type="hidden" id="formExpenseId" value="" />
+        <input type="hidden" id="formRecordType" value="expense" />
+
+        <!-- Payer (남편 / 아내) -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-2">결제자</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-form-payer="남편" class="form-payer-btn py-2.5 rounded-xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-xs">👨 남편</button>
+            <button type="button" data-form-payer="아내" class="form-payer-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs">👩 아내</button>
+          </div>
+        </div>
+
+        <!-- Payment Method (카드 vs 현금·이체) -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-2">결제 수단</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-form-method="카드" class="form-method-btn py-2.5 rounded-xl border-2 border-gray-900 bg-gray-900 text-white font-bold text-xs">💳 카드</button>
+            <button type="button" data-form-method="현금" class="form-method-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs">💵 현금·이체</button>
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div>
+          <label for="formAmount" class="block text-xs font-semibold text-gray-500 mb-1.5">금액 (원)</label>
+          <input id="formAmount" type="number" inputmode="numeric" min="0" required placeholder="예: 25000" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-base font-bold text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+        </div>
+
+        <!-- Merchant -->
+        <div>
+          <label for="formMerchant" class="block text-xs font-semibold text-gray-500 mb-1.5">사용처 / 내용</label>
+          <input id="formMerchant" type="text" required placeholder="예: 쿠팡, 스타벅스, 마트 장보기" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+        </div>
+
+        <!-- Date & Category -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="formDate" class="block text-xs font-semibold text-gray-500 mb-1.5">결제 날짜</label>
+            <input id="formDate" type="date" required class="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:bg-white" />
+          </div>
+          <div>
+            <label for="formTime" class="block text-xs font-semibold text-gray-500 mb-1.5">결제 시간 (선택)</label>
+            <input id="formTime" type="time" class="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:bg-white" />
+          </div>
+        </div>
+
+        <div>
+          <label for="formCategory" class="block text-xs font-semibold text-gray-500 mb-1.5">카테고리</label>
+          <select id="formCategory" class="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:bg-white">
+            <option value="식비">🍽️ 식비</option>
+            <option value="카페·간식">☕ 카페·간식</option>
+            <option value="장보기·생활">🛒 장보기·생활</option>
+            <option value="교통·차량">🚗 교통·차량</option>
+            <option value="쇼핑·의류">🛍️ 쇼핑·의류</option>
+            <option value="주거·관리">🏠 주거·관리</option>
+            <option value="의료·건강">🏥 의료·건강</option>
+            <option value="문화·여행">✈️ 문화·여행</option>
+            <option value="경조사·선물">🎁 경조사·선물</option>
+            <option value="구독·통신">📱 구독·통신</option>
+            <option value="기타">📌 기타</option>
+          </select>
+        </div>
+
+        <!-- Installment Months -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="formInstallmentPreset" class="text-xs font-semibold text-gray-500">할부 설정</label>
+            <span id="installmentPreviewBadge" class="hidden text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">월 0원</span>
+          </div>
+          <div class="flex gap-2">
+            <select id="formInstallmentPreset" class="flex-1 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900">
+              <option value="1">일시불</option>
+              <option value="2">2개월 할부</option>
+              <option value="3">3개월 할부</option>
+              <option value="6">6개월 할부</option>
+              <option value="10">10개월 할부</option>
+              <option value="12">12개월 할부</option>
+              <option value="18">18개월 할부</option>
+              <option value="24">24개월 할부</option>
+              <option value="36">36개월 할부</option>
+              <option value="custom">직접 입력</option>
+            </select>
+            <input id="formInstallmentMonths" type="number" min="2" max="60" value="3" class="hidden w-20 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-center text-gray-900" placeholder="개월" />
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2 pt-2">
+          <button id="deleteExpenseBtn" type="button" class="hidden px-4 py-3.5 rounded-2xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs">삭제</button>
+          <button type="submit" class="flex-1 py-3.5 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white font-bold text-sm btn-primary-react">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Fixed Expense Add & Edit Modal -->
+  <div id="fixedModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="fixedModalTitle" class="text-base font-bold text-gray-900">고정 지출 추가</h3>
+        <button type="button" onclick="closeModal('fixedModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="fixedForm" class="space-y-4">
+        <input type="hidden" id="fixedFormId" value="" />
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-2">담당 결제자</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-fixed-payer="남편" class="fixed-payer-btn py-2.5 rounded-xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-xs">👨 남편</button>
+            <button type="button" data-fixed-payer="아내" class="fixed-payer-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs">👩 아내</button>
+          </div>
+        </div>
+
+        <div>
+          <label for="fixedName" class="block text-xs font-semibold text-gray-500 mb-1.5">항목명</label>
+          <input id="fixedName" type="text" required placeholder="예: 아파트 관리비, 주택담보대출, 넷플릭스" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="fixedAmount" class="block text-xs font-semibold text-gray-500 mb-1.5">월 금액 (원)</label>
+            <input id="fixedAmount" type="number" inputmode="numeric" min="0" required placeholder="예: 250000" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:bg-white" />
+          </div>
+          <div>
+            <label for="fixedBillingDay" class="block text-xs font-semibold text-gray-500 mb-1.5">결제일 (매월)</label>
+            <input id="fixedBillingDay" type="number" inputmode="numeric" min="1" max="31" value="25" required class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:bg-white" />
+          </div>
+        </div>
+
+        <div>
+          <label for="fixedCategory" class="block text-xs font-semibold text-gray-500 mb-1.5">카테고리</label>
+          <select id="fixedCategory" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900">
+            <option value="주거·관리">🏠 주거·관리</option>
+            <option value="구독·통신">📱 구독·통신</option>
+            <option value="교통·차량">🚗 교통·차량</option>
+            <option value="의료·건강">🏥 의료·건강</option>
+            <option value="식비">🍽️ 식비</option>
+            <option value="기타">📌 기타</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button id="deleteFixedBtn" type="button" class="hidden px-4 py-3.5 rounded-2xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs">삭제</button>
+          <button type="submit" class="flex-1 py-3.5 rounded-2xl bg-gray-900 hover:bg-gray-800 text-white font-bold text-sm btn-primary-react">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Budget Setting Modal -->
+  <div id="budgetModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-gray-900">월 목표 예산 설정</h3>
+        <button type="button" onclick="closeModal('budgetModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <input id="budgetInput" type="number" inputmode="numeric" min="0" step="10000" placeholder="예: 2500000" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-lg font-extrabold text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-budget-preset="1500000" class="budget-preset-btn py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700">150만원</button>
+          <button type="button" data-budget-preset="2000000" class="budget-preset-btn py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700">200만원</button>
+          <button type="button" data-budget-preset="3000000" class="budget-preset-btn py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700">300만원</button>
+        </div>
+        <button id="saveBudgetBtn" type="button" class="w-full py-3.5 rounded-2xl bg-gray-900 text-white font-bold text-sm btn-primary-react">예산 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Month Picker Modal -->
+  <div id="monthPickerModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-4">
+        <button id="pickerPrevYearBtn" type="button" class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+        <span id="pickerYearLabel" class="text-base font-extrabold text-gray-900">2026년</span>
+        <button id="pickerNextYearBtn" type="button" class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="monthPickerGrid" class="grid grid-cols-3 gap-2 mb-4"></div>
+      <button id="jumpTodayMonthBtn" type="button" class="w-full py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold">이번 달로 이동</button>
+    </div>
+  </div>
+
+  <!-- 5. Couple Room & Share Settings Modal -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-gray-900">부부 공유 및 앱 설정</h3>
+        <button type="button" onclick="closeModal('settingsModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Couple Room Code -->
+      <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2.5">
+        <p class="text-xs font-bold text-gray-700">🏠 부부 실시간 공유 방 코드</p>
+        <p class="text-[11px] text-gray-500 leading-relaxed">남편과 아내가 같은 방 코드를 쓰면 지출·사진·예산이 실시간으로 동기화됩니다.</p>
+        <div class="flex gap-2">
+          <input id="roomCodeInput" type="text" class="flex-1 px-3 py-2.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-900" />
+          <button id="copyRoomCodeBtn" type="button" class="px-3 py-2.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 shrink-0">복사</button>
+          <button id="applyRoomCodeBtn" type="button" class="px-3.5 py-2.5 rounded-xl bg-gray-900 text-white text-xs font-bold shrink-0 btn-primary-react">적용</button>
+        </div>
+      </div>
+
+      <!-- Quick Menu Links -->
+      <div class="space-y-2">
+        <button id="settingsToProfileBtn" type="button" class="w-full p-3.5 rounded-2xl bg-rose-50/70 hover:bg-rose-50 border border-rose-100 flex items-center justify-between">
+          <div class="flex items-center gap-2.5 text-left">
+            <span class="text-lg">💍</span>
+            <div>
+              <p class="text-xs font-bold text-gray-900">부부 결혼사진 · 프로필 꾸미기</p>
+              <p class="text-[11px] text-gray-500">배너 사진, 남편·아내 얼굴 사진 설정</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+        </button>
+
+        <button id="settingsToSecurityBtn" type="button" class="w-full p-3.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-50 border border-emerald-100 flex items-center justify-between">
+          <div class="flex items-center gap-2.5 text-left">
+            <span class="text-lg">🔒</span>
+            <div>
+              <p class="text-xs font-bold text-gray-900">부부 2인 전용 보안 잠금</p>
+              <p class="text-[11px] text-gray-500">허용된 남편·아내 이메일 관리 및 서버 규칙</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Couple Profile & Wedding Photo Modal -->
+  <div id="profileModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-gray-900">💍 부부 사진 · 프로필 꾸미기</h3>
+        <button type="button" onclick="closeModal('profileModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Couple Title -->
+      <div>
+        <label for="profileTitleInput" class="block text-xs font-semibold text-gray-500 mb-1.5">가계부 제목</label>
+        <input id="profileTitleInput" type="text" placeholder="예: 우리 부부 가계부" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-bold text-gray-900" />
+      </div>
+
+      <!-- Wedding Banner Photo -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-gray-500">대시보드 상단 결혼사진 배너</label>
+          <button id="clearBannerPhotoBtn" type="button" class="hidden text-[11px] font-semibold text-red-500">사진 삭제</button>
+        </div>
+        <label for="bannerPhotoInput" class="block cursor-pointer">
+          <div class="relative h-28 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-200 flex items-center justify-center">
+            <img id="bannerPhotoPreview" src="" alt="배너 미리보기" class="hidden w-full h-full object-cover" />
+            <div id="bannerPhotoPlaceholder" class="text-center text-xs text-gray-500">
+              <p class="font-bold">📸 결혼사진 올리기</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">누르면 앨범에서 선택할 수 있어요</p>
+            </div>
+          </div>
+          <input id="bannerPhotoInput" type="file" accept="image/*" class="hidden" />
+        </label>
+      </div>
+
+      <!-- 2 Avatars: Husband / Wife -->
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Husband Avatar -->
+        <div class="flex flex-col items-center bg-husband-bg/50 rounded-2xl p-3.5 border border-blue-100/70">
+          <div class="relative w-16 h-16">
+            <label for="husbandPhotoInput" class="cursor-pointer block w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-blue-200 shadow-sm flex items-center justify-center text-2xl">
+              <img id="husbandPhotoPreview" src="" alt="남편" class="hidden w-full h-full object-cover" />
+              <span id="husbandPhotoEmoji">👨</span>
+            </label>
+            <button type="button" id="clearHusbandPhotoBtn" class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px]">✕</button>
+            <input id="husbandPhotoInput" type="file" accept="image/*" class="hidden" />
+          </div>
+          <span class="text-xs font-bold text-husband-text mt-2">남편</span>
+          <label for="husbandPhotoInput" class="cursor-pointer text-[10px] text-gray-500 underline mt-0.5">사진 변경</label>
+        </div>
+
+        <!-- Wife (아내) Avatar -->
+        <div class="flex flex-col items-center bg-wife-bg/50 rounded-2xl p-3.5 border border-pink-100/70">
+          <div class="relative w-16 h-16">
+            <label for="wifePhotoInput" class="cursor-pointer block w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-pink-200 shadow-sm flex items-center justify-center text-2xl">
+              <img id="wifePhotoPreview" src="" alt="아내" class="hidden w-full h-full object-cover" />
+              <span id="wifePhotoEmoji">👩</span>
+            </label>
+            <button type="button" id="clearWifePhotoBtn" class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px]">✕</button>
+            <input id="wifePhotoInput" type="file" accept="image/*" class="hidden" />
+          </div>
+          <span class="text-xs font-bold text-wife-text mt-2">아내</span>
+          <label for="wifePhotoInput" class="cursor-pointer text-[10px] text-gray-500 underline mt-0.5">사진 변경</label>
+        </div>
+      </div>
+
+      <button id="saveProfileBtn" type="button" class="w-full py-3.5 rounded-2xl bg-gray-900 text-white font-bold text-sm btn-primary-react">프로필 저장하기</button>
+    </div>
+  </div>
+
+  <!-- 7. Security & 2-Person Lock Modal -->
+  <div id="securityModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto space-y-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-gray-900">🔒 부부 2인 전용 보안 잠금</h3>
+        <button type="button" onclick="closeModal('securityModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Current Account Info -->
+      <div class="bg-gray-50 rounded-2xl p-3.5 border border-gray-100 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <p class="text-[11px] text-gray-400 font-medium">현재 로그인 계정</p>
+          <p id="secCurrentEmail" class="text-xs font-bold text-gray-900 truncate">-</p>
+        </div>
+        <button id="secLogoutBtn" type="button" class="px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 shrink-0">로그아웃</button>
+      </div>
+
+      <!-- Lock Toggle -->
+      <label class="flex items-center justify-between bg-emerald-50/70 rounded-2xl p-3.5 border border-emerald-100 cursor-pointer">
+        <div>
+          <p class="text-xs font-bold text-emerald-900">허용 이메일 잠금 사용</p>
+          <p class="text-[11px] text-emerald-700 mt-0.5">아래 2개 이메일 외에는 접속을 차단합니다</p>
+        </div>
+        <input id="secLockToggle" type="checkbox" checked class="w-5 h-5 accent-emerald-600 rounded" />
+      </label>
+
+      <!-- Allowed Emails -->
+      <div class="space-y-3">
+        <div>
+          <label for="secHusbandEmail" class="block text-xs font-semibold text-gray-500 mb-1.5">👨 남편 허용 이메일 (구글 또는 이메일)</label>
+          <input id="secHusbandEmail" type="email" placeholder="husband@gmail.com" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+        </div>
+        <div>
+          <label for="secWifeEmail" class="block text-xs font-semibold text-gray-500 mb-1.5">👩 아내 허용 이메일 (구글 또는 이메일)</label>
+          <input id="secWifeEmail" type="email" placeholder="wife@gmail.com" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+        </div>
+      </div>
+
+      <button id="saveSecurityBtn" type="button" class="w-full py-3.5 rounded-2xl bg-gray-900 text-white font-bold text-sm btn-primary-react">허용 이메일 저장하기</button>
+
+      <!-- Server Firestore Rules Box -->
+      <div class="pt-3 border-t border-gray-100 space-y-2">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-bold text-gray-800">🛡️ 서버(Firebase) 보안 규칙</p>
+          <button id="copyRulesBtn" type="button" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-[11px] font-bold text-gray-700">규칙 복사</button>
+        </div>
+        <p class="text-[11px] text-gray-400">Firebase 콘솔 → Firestore Database → 규칙(Rules)에 붙여넣고 게시하세요.</p>
+        <pre id="serverRulesPreview" class="bg-gray-900 text-emerald-300 text-[10px] p-3 rounded-xl overflow-x-auto leading-relaxed select-all"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. My Role (내 정보: 남편 / 아내) Modal -->
+  <div id="myRoleModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-gray-900">내 정보 설정</h3>
+        <button type="button" onclick="closeModal('myRoleModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-gray-500 mb-4 leading-relaxed">
+        이 기기에서 사용하는 사람을 선택하면, <strong>직접 입력</strong>과 <strong>캡처 등록</strong> 시 기본 결제자가 자동으로 맞춰집니다.
+      </p>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <button type="button" data-my-role="남편" class="my-role-option-btn py-5 px-3 rounded-2xl border-2 border-blue-500 bg-husband-bg text-husband-text flex flex-col items-center gap-2 shadow-sm">
+          <span class="text-3xl">👨</span>
+          <span class="text-sm font-bold">남편</span>
+        </button>
+        <button type="button" data-my-role="아내" class="my-role-option-btn py-5 px-3 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-600 flex flex-col items-center gap-2">
+          <span class="text-3xl">👩</span>
+          <span class="text-sm font-bold">아내</span>
+        </button>
+      </div>
+      <div class="bg-gray-50 rounded-2xl px-3.5 py-2.5 text-[11px] text-gray-500 flex items-center justify-between gap-2">
+        <span class="shrink-0">현재 로그인 계정</span>
+        <span id="myRoleAccountEmail" class="font-semibold text-gray-700 truncate">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Custom In-App Confirmation Modal (No browser confirm()) -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-5">
+    <div class="modal-card-anim bg-white w-full max-w-xs rounded-3xl p-5 shadow-xl text-center space-y-4">
+      <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mx-auto text-xl">🗑️</div>
+      <div>
+        <h4 id="confirmTitle" class="text-sm font-bold text-gray-900">내역을 삭제할까요?</h4>
+        <p id="confirmMessage" class="text-xs text-gray-500 mt-1">삭제하면 다시 되돌릴 수 없어요.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="confirmCancelBtn" type="button" class="py-2.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold">취소</button>
+        <button id="confirmOkBtn" type="button" class="py-2.5 rounded-xl bg-red-500 text-white text-xs font-bold">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9-B. Cash Income Add & Edit Modal (현금 입금 등록) -->
+  <div id="incomeModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[90vh] overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="incomeModalTitle" class="text-base font-bold text-gray-900">💵 현금 입금 등록</h3>
+        <button type="button" onclick="closeModal('incomeModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="incomeForm" class="space-y-4">
+        <input type="hidden" id="incomeFormId" value="" />
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-2">입금 받은 사람</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-income-owner="남편" class="income-owner-btn py-2.5 rounded-xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-xs">👨 남편</button>
+            <button type="button" data-income-owner="아내" class="income-owner-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs">👩 아내</button>
+          </div>
+        </div>
+
+        <div>
+          <label for="incomeAmount" class="block text-xs font-semibold text-gray-500 mb-1.5">입금 금액 (원)</label>
+          <input id="incomeAmount" type="number" inputmode="numeric" min="0" required placeholder="예: 3500000" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-base font-bold text-emerald-700 focus:outline-none focus:bg-white focus:border-emerald-600" />
+        </div>
+
+        <div>
+          <label for="incomeSource" class="block text-xs font-semibold text-gray-500 mb-1.5">입금 내용 / 출처</label>
+          <input id="incomeSource" type="text" required placeholder="예: 11월 월급, 당근 중고판매, 부모님 용돈" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-600" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="incomeDate" class="block text-xs font-semibold text-gray-500 mb-1.5">입금 날짜</label>
+            <input id="incomeDate" type="date" required class="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:bg-white" />
+          </div>
+          <div>
+            <label for="incomeCategory" class="block text-xs font-semibold text-gray-500 mb-1.5">입금 유형</label>
+            <select id="incomeCategory" class="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:bg-white">
+              <option value="월급">💼 월급</option>
+              <option value="용돈">💝 용돈</option>
+              <option value="중고판매">📦 중고판매</option>
+              <option value="상여·보너스">🎉 상여·보너스</option>
+              <option value="이자·환급">🏦 이자·환급</option>
+              <option value="기타 입금">💰 기타 입금</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button id="deleteIncomeBtn" type="button" class="hidden px-4 py-3.5 rounded-2xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs">삭제</button>
+          <button type="submit" class="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm btn-primary-react">입금 저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 9-C. Cash Income History Modal (현금 입금 내역 목록) -->
+  <div id="incomeListModal" class="hidden fixed inset-0 z-50 bg-black/45 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="modal-card-anim bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-xl max-h-[85vh] flex flex-col pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+      <div class="flex items-center justify-between mb-3 shrink-0">
+        <div>
+          <h3 class="text-base font-bold text-gray-900">💵 현금 입금 내역</h3>
+          <p id="incomeListSubLabel" class="text-[11px] text-gray-400 mt-0.5">항목을 누르면 수정하거나 삭제할 수 있어요</p>
+        </div>
+        <button type="button" onclick="closeModal('incomeListModal')" class="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3 flex items-center justify-between mb-3 shrink-0">
+        <span id="incomeListScopeText" class="text-xs font-semibold text-emerald-700">전체 누적 입금</span>
+        <span id="incomeListTotalSum" class="text-sm font-extrabold text-emerald-900">+0원</span>
+      </div>
+
+      <div id="incomeListItems" class="flex-1 overflow-y-auto space-y-2 pr-0.5 min-h-[120px]"></div>
+
+      <button id="incomeListAddBtn" type="button" class="mt-4 w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shrink-0 btn-primary-react">
+        + 새 현금 입금 추가
+      </button>
+    </div>
+  </div>
+
+  <!-- 10. Couple 2-Person Auth Gate Overlay -->
+  <div id="authGateOverlay" class="fixed inset-0 z-50 bg-[#f7f8fa] flex flex-col items-center justify-center p-5 overflow-y-auto">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-100 space-y-5 my-auto">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 via-pink-400 to-violet-500 text-white flex items-center justify-center mx-auto shadow-md text-2xl">
+          💑
+        </div>
+        <div>
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold">
+            🔒 부부 2인 전용 잠금
+          </span>
+          <h2 id="authGateTitle" class="text-xl font-extrabold text-gray-900 mt-1.5 tracking-tight">우리 부부 가계부</h2>
+          <p class="text-xs text-gray-500 mt-1">허용된 남편·아내 계정으로 로그인해 주세요.</p>
+        </div>
+      </div>
+
+      <!-- Unauthorized Blocked Box -->
+      <div id="authBlockedBox" class="hidden bg-red-50 border border-red-100 rounded-2xl p-4 text-center space-y-2.5">
+        <p class="text-xs font-bold text-red-700">🚫 접근이 허용되지 않은 계정입니다</p>
+        <p id="authBlockedEmail" class="text-[11px] text-red-600 break-all"></p>
+        <p class="text-[11px] text-red-500">등록된 남편 또는 아내 계정으로 다시 로그인해 주세요.</p>
+        <button id="authSwitchAccountBtn" type="button" class="w-full py-2.5 rounded-xl bg-white border border-red-200 text-red-600 text-xs font-bold">다른 계정으로 로그인</button>
+      </div>
+
+      <!-- Login Methods Box -->
+      <div id="authLoginBox" class="space-y-3">
+        <!-- Google Login Button -->
+        <button id="googleLoginBtn" type="button" class="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 font-bold text-xs shadow-sm flex items-center justify-center gap-2.5">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/>
+          </svg>
+          <span>Google 계정으로 계속하기</span>
+        </button>
+
+        <div class="flex items-center gap-2 text-[11px] text-gray-400">
+          <div class="flex-1 h-px bg-gray-100"></div>
+          <span>또는 이메일 로그인</span>
+          <div class="flex-1 h-px bg-gray-100"></div>
+        </div>
+
+        <form id="emailAuthForm" class="space-y-2.5">
+          <input id="authEmailInput" type="email" autocomplete="email" required placeholder="이메일 주소" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+          <input id="authPasswordInput" type="password" autocomplete="current-password" required minlength="6" placeholder="비밀번호 (6자 이상)" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-medium text-gray-900 focus:outline-none focus:bg-white focus:border-gray-900" />
+          <label class="flex items-center justify-between px-1 py-0.5 cursor-pointer">
+            <span class="flex items-center gap-2 text-[11px] font-semibold text-gray-600">
+              <input id="autoLoginCheckbox" type="checkbox" checked class="w-4 h-4 rounded accent-gray-900" />
+              <span>자동 로그인 유지 (홈 화면 바로가기 자동 접속)</span>
+            </span>
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="emailSignInBtn" type="submit" class="py-3 rounded-xl bg-gray-900 text-white text-xs font-bold btn-primary-react">로그인</button>
+            <button id="emailSignUpBtn" type="button" class="py-3 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold">회원가입</button>
+          </div>
+        </form>
+
+        <p id="authErrorMsg" class="hidden text-[11px] font-semibold text-red-600 bg-red-50 rounded-xl p-2.5 leading-relaxed"></p>
+      </div>
+
+      <!-- Preview Environment Quick Test Helper (Auto-Hidden in Real Production) -->
+      <div id="demoAuthSection" class="pt-3 border-t border-gray-100 space-y-2">
+        <p class="text-[11px] font-semibold text-gray-400 text-center">미리보기 빠른 보안 테스트</p>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button type="button" id="demoHusbandBtn" class="py-2 px-2 rounded-xl bg-husband-bg hover:bg-blue-100 text-husband-text text-[11px] font-bold">👨 남편 입장</button>
+          <button type="button" id="demoWifeBtn" class="py-2 px-2 rounded-xl bg-wife-bg hover:bg-pink-100 text-wife-text text-[11px] font-bold">👩 아내 입장</button>
+          <button type="button" id="demoStrangerBtn" class="py-2 px-2 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 text-[11px] font-bold">🚫 외부인 차단</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- BOTTOM-CENTER MINI FEEDBACK POPUP (1.5s)    -->
+  <!-- ========================================== -->
+  <div id="toast" class="fixed bottom-[calc(6.2rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[70] pointer-events-none opacity-0 scale-90 translate-y-3 transition-all duration-200 ease-out gpu-layer">
+    <div id="toastCard" class="bg-gray-900/95 text-white pl-3 pr-4 py-2.5 rounded-2xl shadow-[0_10px_28px_rgba(0,0,0,0.22)] border border-white/10 text-xs font-semibold flex items-center gap-2.5 whitespace-nowrap max-w-[90vw]">
+      <span id="toastBadge" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-sm shrink-0">💾</span>
+      <span id="toastText" class="truncate">저장되었습니다</span>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- APPLICATION SCRIPT (ES Module)              -->
+  <!-- ========================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      setPersistence,
+      browserLocalPersistence,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      addDoc,
+      setDoc,
+      deleteDoc,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // =========================================================================
+    // 1. PRODUCTION DEPLOYMENT CONFIG (Firebase + Gemini AI)
+    // =========================================================================
+    const DEPLOY_CONFIG = {
+      isProduction: true,
+      appId: "couple-budget-taekjin",
+      firebaseConfig: {
+        apiKey: "AIzaSyBKh3ljE0nnNUpWym7naKGLD4FkvNm5IJI",
+        authDomain: "taekjin-8e0e5.firebaseapp.com",
+        projectId: "taekjin-8e0e5",
+        storageBucket: "taekjin-8e0e5.firebasestorage.app",
+        messagingSenderId: "1046369531674",
+        appId: "1:1046369531674:web:6077d8d86a5133c7405ea3",
+        measurementId: "G-6JL45KC3JR"
+      },
+      geminiApiKey: "AQ.Ab8RN6KvRtyNHQGz7j-PDrYSUyDjkpc5ZiBUEV2I6u8RVGp5dw",
+      defaultRoomCode: "신혼집-기본방",
+      defaultHusbandEmail: "",
+      defaultWifeEmail: ""
+    };
+
+    // Detect Preview / Local Sandbox vs Real Deployed Production (Netlify, etc.)
+    function isPreviewEnvironment() {
+      try {
+        const host = (window.location.hostname || '').toLowerCase();
+        const proto = (window.location.protocol || '').toLowerCase();
+        if (!host || proto === 'about:' || proto === 'blob:' || proto === 'file:' || proto === 'data:') return true;
+        if (host === 'localhost' || host === '127.0.0.1') return true;
+        if (
+          host.includes('googleusercontent.com') ||
+          host.includes('usercontent.goog') ||
+          host.includes('webcontainer') ||
+          host.includes('sandbox')
+        ) {
+          return true;
+        }
+        return false;
+      } catch {
+        return true;
+      }
+    }
+
+    const IS_LIVE_PROD = Boolean(
+      DEPLOY_CONFIG.isProduction &&
+      DEPLOY_CONFIG.firebaseConfig &&
+      DEPLOY_CONFIG.firebaseConfig.apiKey &&
+      DEPLOY_CONFIG.firebaseConfig.projectId &&
+      !isPreviewEnvironment()
+    );
+
+    const APP_ID = DEPLOY_CONFIG.appId || (typeof __app_id !== 'undefined' ? __app_id : 'couple-budget-taekjin');
+
+    // Safe Storage Helper (Prevents crashes in restricted sandboxes)
+    function safeGetStorage(key, fallback = null) {
+      try {
+        const val = window.localStorage.getItem(key);
+        return val !== null ? val : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    function safeSetStorage(key, val) {
+      try {
+        window.localStorage.setItem(key, val);
+      } catch {
+        // Ignore storage quota / sandbox errors
+      }
+    }
+    function safeRemoveStorage(key) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
+    const CACHED_AUTH_KEY = 'couple_budget_cached_auth_v1';
+    const AUTO_LOGIN_CRED_KEY = 'couple_budget_auto_cred_v1';
+
+    function loadCachedAuthSession() {
+      try {
+        const raw = safeGetStorage(CACHED_AUTH_KEY, '');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.email) return parsed;
+      } catch {}
+      return null;
+    }
+    function saveCachedAuthSession(email, provider = 'google') {
+      safeSetStorage(CACHED_AUTH_KEY, JSON.stringify({
+        email: normalizeEmail(email),
+        provider,
+        savedAt: Date.now()
+      }));
+    }
+    function clearCachedAuthSession() {
+      safeRemoveStorage(CACHED_AUTH_KEY);
+    }
+
+    function saveAutoLoginCredential(email, password) {
+      try {
+        const encoded = btoa(encodeURIComponent(JSON.stringify({
+          email: normalizeEmail(email),
+          password: String(password || '')
+        })));
+        safeSetStorage(AUTO_LOGIN_CRED_KEY, encoded);
+      } catch {}
+    }
+
+    function loadAutoLoginCredential() {
+      try {
+        const raw = safeGetStorage(AUTO_LOGIN_CRED_KEY, '');
+        if (!raw) return null;
+        const decoded = JSON.parse(decodeURIComponent(atob(raw)));
+        if (decoded && decoded.email && decoded.password) return decoded;
+      } catch {}
+      return null;
+    }
+
+    function clearAutoLoginCredential() {
+      safeRemoveStorage(AUTO_LOGIN_CRED_KEY);
+    }
+
+    // =========================================================================
+    // 2. CONSTANTS & INITIAL STATE
+    // =========================================================================
+    const CATEGORIES = [
+      { name: '식비', emoji: '🍽️', color: '#f97316' },
+      { name: '카페·간식', emoji: '☕', color: '#8b5cf6' },
+      { name: '장보기·생활', emoji: '🛒', color: '#10b981' },
+      { name: '교통·차량', emoji: '🚗', color: '#3b82f6' },
+      { name: '쇼핑·의류', emoji: '🛍️', color: '#ec4899' },
+      { name: '주거·관리', emoji: '🏠', color: '#14b8a6' },
+      { name: '의료·건강', emoji: '🏥', color: '#ef4444' },
+      { name: '문화·여행', emoji: '✈️', color: '#6366f1' },
+      { name: '경조사·선물', emoji: '🎁', color: '#f59e0b' },
+      { name: '구독·통신', emoji: '📱', color: '#06b6d4' },
+      { name: '기타', emoji: '📌', color: '#6b7280' }
+    ];
+
+    const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.name, c]));
+
+    const nowDate = new Date();
+    const initialYear = nowDate.getFullYear();
+    const initialMonth = nowDate.getMonth() + 1;
+
+    const state = {
+      activeTab: 'dashboard',
+      year: initialYear,
+      month: initialMonth,
+      pickerYear: initialYear,
+      roomCode: safeGetStorage('couple_room_code', DEPLOY_CONFIG.defaultRoomCode || '신혼집-기본방'),
+      myRole: safeGetStorage('couple_my_role', '남편'),
+      payerFilter: '전체',
+      methodFilter: '전체',
+      categoryFilter: '전체',
+      cashScope: '공동',
+      nextScope: '공동',
+      bulkDeleteMode: false,
+      bulkSelectedIds: new Set(),
+      capturePayer: safeGetStorage('couple_my_role', '남편'),
+      reviewItems: [],
+      expenses: [],
+      fixedExpenses: [],
+      incomes: [],
+      settings: {
+        monthlyBudget: 2000000,
+        coupleTitle: '우리 부부 가계부',
+        bannerPhoto: '',
+        husbandPhoto: '',
+        wifePhoto: ''
+      },
+      security: {
+        lockEnabled: true,
+        husbandEmail: DEPLOY_CONFIG.defaultHusbandEmail || '',
+        wifeEmail: DEPLOY_CONFIG.defaultWifeEmail || ''
+      },
+      authUser: IS_LIVE_PROD ? loadCachedAuthSession() : null,
+      userId: null,
+      useCloud: false
+    };
+
+    // =========================================================================
+    // 3. UTILITY FUNCTIONS
+    // =========================================================================
+    function formatKRW(num) {
+      const n = Math.round(Number(num) || 0);
+      return `${n.toLocaleString('ko-KR')}원`;
+    }
+
+    function normalizePayer(p) {
+      if (p === '와이프' || p === '아내') return '아내';
+      return '남편';
+    }
+
+    function normalizeMethod(m) {
+      return m === '현금' ? '현금' : '카드';
+    }
+
+    function normalizeEmail(e) {
+      return String(e || '').trim().toLowerCase();
+    }
+
+    function getYearMonthKey(y, m) {
+      return `${y}-${String(m).padStart(2, '0')}`;
+    }
+
+    function getAdjacentYearMonth(y, m, delta) {
+      let ny = y;
+      let nm = m + delta;
+      while (nm > 12) {
+        nm -= 12;
+        ny += 1;
+      }
+      while (nm < 1) {
+        nm += 12;
+        ny -= 1;
+      }
+      return { year: ny, month: nm };
+    }
+
+    function getTodayISO() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    let toastTimer = null;
+    function showToast(message, type = 'save') {
+      const toast = document.getElementById('toast');
+      const badge = document.getElementById('toastBadge');
+      const text = document.getElementById('toastText');
+      if (!toast || !badge || !text) return;
+
+      const styles = {
+        save: { icon: '💾', cls: 'bg-emerald-500/20 text-emerald-300' },
+        delete: { icon: '🗑️', cls: 'bg-rose-500/20 text-rose-300' },
+        copy: { icon: '📋', cls: 'bg-sky-500/20 text-sky-300' },
+        lock: { icon: '🔒', cls: 'bg-violet-500/20 text-violet-300' },
+        ai: { icon: '✨', cls: 'bg-amber-500/20 text-amber-300' },
+        warn: { icon: '⚠️', cls: 'bg-red-500/25 text-red-300' }
+      };
+      const cfg = styles[type] || styles.save;
+      badge.textContent = cfg.icon;
+      badge.className = `w-6 h-6 rounded-full flex items-center justify-center text-sm shrink-0 ${cfg.cls}`;
+      text.textContent = message;
+
+      toast.classList.remove('opacity-0', 'scale-90', 'translate-y-3');
+      toast.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'scale-90', 'translate-y-3');
+      }, 1500);
+    }
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+    }
+
+    window.closeModal = function (id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    };
+
+    let confirmResolver = null;
+    function showConfirm(title, message, okLabel = '삭제') {
+      return new Promise((resolve) => {
+        confirmResolver = resolve;
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmOkBtn').textContent = okLabel;
+        openModal('confirmModal');
+      });
+    }
+
+    function resizeImageToDataUrl(file, maxDim = 1024, quality = 0.8) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Generate Pastel Wallet & Heart App Icon dynamically for iOS Home Screen & Favicon
+    function generateCoupleAppIcon() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const grad = ctx.createLinearGradient(0, 0, 512, 512);
+        grad.addColorStop(0, '#fbcfe8');
+        grad.addColorStop(0.5, '#f5d0fe');
+        grad.addColorStop(1, '#c4b5fd');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Wallet Body
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(106, 178, 300, 210, 44);
+        ctx.fill();
+
+        // Wallet Flap
+        ctx.fillStyle = '#f3e8ff';
+        ctx.beginPath();
+        ctx.roundRect(290, 248, 128, 70, 26);
+        ctx.fill();
+
+        // Clasp Dot
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.arc(328, 283, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Heart above wallet
+        ctx.font = '112px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💖', 256, 136);
+
+        const pngUrl = canvas.toDataURL('image/png');
+        const appleLink = document.getElementById('appleTouchIconLink');
+        const favLink = document.getElementById('faviconLink');
+        if (appleLink) appleLink.href = pngUrl;
+        if (favLink) favLink.href = pngUrl;
+      } catch {
+        // Ignore icon canvas errors
+      }
+    }
+
+    // =========================================================================
+    // 4. FIREBASE CLOUD & DEMO STORAGE ENGINE
+    // =========================================================================
+    let fbApp = null;
+    let auth = null;
+    let db = null;
+    let roomUnsubscribers = [];
+
+    function updateSyncBadge(connected) {
+      const dot = document.getElementById('syncDot');
+      const label = document.getElementById('roomBadgeText');
+      if (!dot || !label) return;
+      if (connected) {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0';
+        label.textContent = `${state.roomCode} · 실시간 동기화`;
+      } else {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0';
+        label.textContent = IS_LIVE_PROD ? `${state.roomCode} · 대기 중` : `${state.roomCode} · 미리보기 모드`;
+      }
+    }
+
+    function clearSubscriptions() {
+      roomUnsubscribers.forEach((unsub) => {
+        try {
+          unsub();
+        } catch {}
+      });
+      roomUnsubscribers = [];
+    }
+
+    function getRoomCollection(colName) {
+      const code = (state.roomCode || '신혼집-기본방').trim();
+      return collection(db, 'artifacts', APP_ID, 'public', 'data', `room_${code}_${colName}`);
+    }
+
+    function getRoomDoc(docName) {
+      const code = (state.roomCode || '신혼집-기본방').trim();
+      return doc(db, 'artifacts', APP_ID, 'public', 'data', `room_${code}_meta`, docName);
+    }
+
+    let renderFrameRequested = false;
+    function scheduleRender() {
+      if (renderFrameRequested) return;
+      renderFrameRequested = true;
+      requestAnimationFrame(() => {
+        renderFrameRequested = false;
+        renderCurrentView();
+      });
+    }
+
+    function connectRoomListeners() {
+      if (!db) return;
+      clearSubscriptions();
+
+      roomUnsubscribers.push(
+        onSnapshot(getRoomCollection('expenses'), (snap) => {
+          state.expenses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          scheduleRender();
+        }, (err) => console.warn('expenses sync:', err))
+      );
+
+      roomUnsubscribers.push(
+        onSnapshot(getRoomCollection('fixedExpenses'), (snap) => {
+          state.fixedExpenses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          scheduleRender();
+        }, (err) => console.warn('fixed sync:', err))
+      );
+
+      roomUnsubscribers.push(
+        onSnapshot(getRoomCollection('incomes'), (snap) => {
+          state.incomes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          scheduleRender();
+        }, (err) => console.warn('incomes sync:', err))
+      );
+
+      roomUnsubscribers.push(
+        onSnapshot(getRoomDoc('settings'), (snap) => {
+          if (snap.exists()) {
+            state.settings = { ...state.settings, ...snap.data() };
+            applyProfileVisuals();
+            scheduleRender();
+          }
+        }, (err) => console.warn('settings sync:', err))
+      );
+
+      roomUnsubscribers.push(
+        onSnapshot(getRoomDoc('security'), (snap) => {
+          if (snap.exists()) {
+            state.security = { ...state.security, ...snap.data() };
+            renderSecurityModal();
+            renderAuthGate();
+          }
+        }, (err) => console.warn('security sync:', err))
+      );
+    }
+
+    function seedDemoData() {
+      const ym = getYearMonthKey(state.year, state.month);
+      state.expenses = [
+        { id: 'demo-1', date: `${ym}-03`, time: '12:30', merchant: '스타벅스 성남점', amount: 11200, payer: '아내', paymentMethod: '카드', category: '카페·간식', installmentMonths: 1 },
+        { id: 'demo-2', date: `${ym}-05`, time: '19:45', merchant: '이마트 트레이더스', amount: 138500, payer: '남편', paymentMethod: '카드', category: '장보기·생활', installmentMonths: 1 },
+        { id: 'demo-3', date: `${ym}-08`, time: '14:10', merchant: 'LG 베스트샵 가전', amount: 1200000, payer: '남편', paymentMethod: '카드', category: '주거·관리', installmentMonths: 6 },
+        { id: 'demo-4', date: `${ym}-11`, time: '09:15', merchant: '동네 반찬가게 (계좌이체)', amount: 42000, payer: '아내', paymentMethod: '현금', category: '식비', installmentMonths: 1 }
+      ];
+      state.fixedExpenses = [
+        { id: 'fixed-1', name: '아파트 관리비', amount: 220000, billingDay: 25, payer: '남편', category: '주거·관리', active: true },
+        { id: 'fixed-2', name: '부부 통신비·인터넷', amount: 98000, billingDay: 15, payer: '아내', category: '구독·통신', active: true }
+      ];
+      state.incomes = [
+        { id: 'inc-1', date: `${ym}-10`, owner: '남편', source: '월급 입금', amount: 3500000, category: '월급' },
+        { id: 'inc-2', date: `${ym}-10`, owner: '아내', source: '월급 입금', amount: 3100000, category: '월급' }
+      ];
+    }
+
+    // =========================================================================
+    // 4-B. CLOUD / LOCAL CRUD OPERATIONS
+    // =========================================================================
+    async function saveExpenseRecord(data) {
+      const clean = {
+        date: String(data.date || getTodayISO()).trim(),
+        time: String(data.time || '').trim(),
+        merchant: String(data.merchant || '사용처').trim(),
+        amount: Math.max(0, Math.round(Number(data.amount) || 0)),
+        payer: normalizePayer(data.payer),
+        paymentMethod: normalizeMethod(data.paymentMethod),
+        category: CATEGORY_MAP[data.category] ? data.category : '기타',
+        installmentMonths: Math.max(1, Math.min(60, Math.round(Number(data.installmentMonths) || 1)))
+      };
+
+      if (state.useCloud && db) {
+        if (data.id) {
+          await setDoc(doc(getRoomCollection('expenses'), data.id), { ...clean, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+          await addDoc(getRoomCollection('expenses'), { ...clean, createdAt: serverTimestamp() });
+        }
+      } else {
+        if (data.id) {
+          const idx = state.expenses.findIndex((x) => x.id === data.id);
+          if (idx >= 0) state.expenses[idx] = { ...state.expenses[idx], ...clean };
+        } else {
+          state.expenses.push({ id: `exp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...clean });
+        }
+        scheduleRender();
+      }
+    }
+
+    async function deleteExpenseRecord(id) {
+      if (!id) return;
+      if (state.useCloud && db) {
+        await deleteDoc(doc(getRoomCollection('expenses'), id));
+      } else {
+        state.expenses = state.expenses.filter((x) => x.id !== id);
+        scheduleRender();
+      }
+    }
+
+    async function saveFixedRecord(data) {
+      const clean = {
+        name: String(data.name || '고정지출').trim(),
+        amount: Math.max(0, Math.round(Number(data.amount) || 0)),
+        billingDay: Math.max(1, Math.min(31, Math.round(Number(data.billingDay) || 25))),
+        payer: normalizePayer(data.payer),
+        category: CATEGORY_MAP[data.category] ? data.category : '주거·관리',
+        active: data.active !== false
+      };
+
+      if (state.useCloud && db) {
+        if (data.id) {
+          await setDoc(doc(getRoomCollection('fixedExpenses'), data.id), { ...clean, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+          await addDoc(getRoomCollection('fixedExpenses'), { ...clean, createdAt: serverTimestamp() });
+        }
+      } else {
+        if (data.id) {
+          const idx = state.fixedExpenses.findIndex((x) => x.id === data.id);
+          if (idx >= 0) state.fixedExpenses[idx] = { ...state.fixedExpenses[idx], ...clean };
+        } else {
+          state.fixedExpenses.push({ id: `fix-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...clean });
+        }
+        scheduleRender();
+      }
+    }
+
+    async function deleteFixedRecord(id) {
+      if (!id) return;
+      if (state.useCloud && db) {
+        await deleteDoc(doc(getRoomCollection('fixedExpenses'), id));
+      } else {
+        state.fixedExpenses = state.fixedExpenses.filter((x) => x.id !== id);
+        scheduleRender();
+      }
+    }
+
+    async function saveIncomeRecord(data) {
+      const clean = {
+        owner: normalizePayer(data.owner),
+        amount: Math.max(0, Math.round(Number(data.amount) || 0)),
+        source: String(data.source || '입금').trim(),
+        date: String(data.date || getTodayISO()).trim(),
+        category: String(data.category || '월급').trim()
+      };
+
+      if (state.useCloud && db) {
+        if (data.id) {
+          await setDoc(doc(getRoomCollection('incomes'), data.id), { ...clean, updatedAt: serverTimestamp() }, { merge: true });
+        } else {
+          await addDoc(getRoomCollection('incomes'), { ...clean, createdAt: serverTimestamp() });
+        }
+      } else {
+        if (data.id) {
+          const idx = state.incomes.findIndex((x) => x.id === data.id);
+          if (idx >= 0) state.incomes[idx] = { ...state.incomes[idx], ...clean };
+        } else {
+          state.incomes.push({ id: `inc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, ...clean });
+        }
+        scheduleRender();
+      }
+    }
+
+    async function deleteIncomeRecord(id) {
+      if (!id) return;
+      if (state.useCloud && db) {
+        await deleteDoc(doc(getRoomCollection('incomes'), id));
+      } else {
+        state.incomes = state.incomes.filter((x) => x.id !== id);
+        scheduleRender();
+      }
+    }
+
+    async function saveSettingsMeta(partial) {
+      state.settings = { ...state.settings, ...partial };
+      applyProfileVisuals();
+      if (state.useCloud && db) {
+        await setDoc(getRoomDoc('settings'), state.settings, { merge: true });
+      }
+      scheduleRender();
+    }
+
+    async function saveSecurityMeta(partial) {
+      state.security = { ...state.security, ...partial };
+      if (state.useCloud && db) {
+        await setDoc(getRoomDoc('security'), state.security, { merge: true });
+      }
+      renderSecurityModal();
+      renderAuthGate();
+    }
+
+    // =========================================================================
+    // 5. MONTHLY FINANCIAL SNAPSHOT, CASH FLOW & BILLING ENGINE
+    // =========================================================================
+    function getMonthSnapshot(year, month) {
+      const targetIdx = year * 12 + (month - 1);
+      const items = [];
+      let regularSum = 0;
+      let installmentSum = 0;
+      let fixedSum = 0;
+      let cardSum = 0;
+      let cashSum = 0;
+      let husbandSum = 0;
+      let wifeSum = 0;
+      const catTotals = {};
+
+      for (const exp of state.expenses) {
+        const parts = String(exp.date || '').split('-');
+        if (parts.length < 2) continue;
+        const ey = Number(parts[0]);
+        const em = Number(parts[1]);
+        if (!ey || !em) continue;
+
+        const startIdx = ey * 12 + (em - 1);
+        const rounds = Math.max(1, Math.round(Number(exp.installmentMonths) || 1));
+        const diff = targetIdx - startIdx;
+        if (diff < 0 || diff >= rounds) continue;
+
+        const isInst = rounds > 1;
+        const rawAmt = Math.max(0, Math.round(Number(exp.amount) || 0));
+        const effAmt = isInst ? Math.round(rawAmt / rounds) : rawAmt;
+        const payer = normalizePayer(exp.payer);
+        const method = normalizeMethod(exp.paymentMethod);
+        const cat = CATEGORY_MAP[exp.category] ? exp.category : '기타';
+
+        if (isInst) installmentSum += effAmt;
+        else regularSum += effAmt;
+
+        if (method === '현금') cashSum += effAmt;
+        else cardSum += effAmt;
+
+        if (payer === '아내') wifeSum += effAmt;
+        else husbandSum += effAmt;
+
+        catTotals[cat] = (catTotals[cat] || 0) + effAmt;
+
+        items.push({
+          ...exp,
+          payer,
+          paymentMethod: method,
+          category: cat,
+          effectiveAmount: effAmt,
+          isInstallment: isInst,
+          currentRound: diff + 1,
+          totalRounds: rounds
+        });
+      }
+
+      for (const f of state.fixedExpenses) {
+        if (f.active === false) continue;
+        const amt = Math.max(0, Math.round(Number(f.amount) || 0));
+        const payer = normalizePayer(f.payer);
+        const cat = CATEGORY_MAP[f.category] ? f.category : '주거·관리';
+
+        fixedSum += amt;
+        if (payer === '아내') wifeSum += amt;
+        else husbandSum += amt;
+        catTotals[cat] = (catTotals[cat] || 0) + amt;
+      }
+
+      const total = regularSum + installmentSum + fixedSum;
+      return {
+        items,
+        total,
+        totalCount: items.length,
+        regularSum,
+        installmentSum,
+        fixedSum,
+        cardSum,
+        cashSum,
+        husbandSum,
+        wifeSum,
+        catTotals
+      };
+    }
+
+    function getBillingSummaryForMonth(billYear, billMonth) {
+      const prev = getAdjacentYearMonth(billYear, billMonth, -1);
+      const prevSnap = getMonthSnapshot(prev.year, prev.month);
+      const billSnap = getMonthSnapshot(billYear, billMonth);
+
+      let prevCardHusband = 0;
+      let prevCardWife = 0;
+      for (const it of prevSnap.items) {
+        if (!it.isInstallment && it.paymentMethod === '카드') {
+          if (it.payer === '아내') prevCardWife += it.effectiveAmount;
+          else prevCardHusband += it.effectiveAmount;
+        }
+      }
+
+      let instHusband = 0;
+      let instWife = 0;
+      for (const it of billSnap.items) {
+        if (it.isInstallment) {
+          if (it.payer === '아내') instWife += it.effectiveAmount;
+          else instHusband += it.effectiveAmount;
+        }
+      }
+
+      let fixedHusband = 0;
+      let fixedWife = 0;
+      for (const f of state.fixedExpenses) {
+        if (f.active === false) continue;
+        const amt = Math.max(0, Math.round(Number(f.amount) || 0));
+        if (normalizePayer(f.payer) === '아내') fixedWife += amt;
+        else fixedHusband += amt;
+      }
+
+      const husbandTotal = prevCardHusband + instHusband + fixedHusband;
+      const wifeTotal = prevCardWife + instWife + fixedWife;
+      const total = husbandTotal + wifeTotal;
+
+      return {
+        total,
+        husbandTotal,
+        wifeTotal,
+        byScope(scope) {
+          if (scope === '남편') return { total: husbandTotal, card: prevCardHusband, inst: instHusband, fixed: fixedHusband };
+          if (scope === '아내') return { total: wifeTotal, card: prevCardWife, inst: instWife, fixed: fixedWife };
+          return { total, card: prevCardHusband + prevCardWife, inst: instHusband + instWife, fixed: fixedHusband + fixedWife };
+        }
+      };
+    }
+
+    function getMonthlyCashFlow(year, month) {
+      const ym = getYearMonthKey(year, month);
+      const monthIncomes = state.incomes.filter((inc) => String(inc.date || '').startsWith(ym));
+
+      let inHusband = 0;
+      let inWife = 0;
+      for (const inc of monthIncomes) {
+        const amt = Math.max(0, Math.round(Number(inc.amount) || 0));
+        if (normalizePayer(inc.owner) === '아내') inWife += amt;
+        else inHusband += amt;
+      }
+      const inTotal = inHusband + inWife;
+
+      const snap = getMonthSnapshot(year, month);
+      let outHusband = 0;
+      let outWife = 0;
+      for (const it of snap.items) {
+        if (!it.isInstallment && it.paymentMethod === '현금') {
+          if (it.payer === '아내') outWife += it.effectiveAmount;
+          else outHusband += it.effectiveAmount;
+        }
+      }
+      const outTotal = outHusband + outWife;
+
+      const bill = getBillingSummaryForMonth(year, month);
+      const billHusband = bill.husbandTotal;
+      const billWife = bill.wifeTotal;
+      const billTotal = bill.total;
+
+      const balHusband = inHusband - billHusband - outHusband;
+      const balWife = inWife - billWife - outWife;
+      const balTotal = inTotal - billTotal - outTotal;
+
+      return {
+        monthIncomes,
+        inHusband,
+        inWife,
+        inTotal,
+        billHusband,
+        billWife,
+        billTotal,
+        outHusband,
+        outWife,
+        outTotal,
+        balHusband,
+        balWife,
+        balTotal
+      };
+    }
+
+    // Calculate cumulative cash balance from the earliest recorded month up to (year, month)
+    function getCumulativeCashBalance(year, month) {
+      const targetIdx = year * 12 + (month - 1);
+      let startIdx = targetIdx;
+
+      for (const inc of state.incomes) {
+        const parts = String(inc.date || '').split('-');
+        if (parts.length >= 2 && Number(parts[0]) && Number(parts[1])) {
+          const idx = Number(parts[0]) * 12 + (Number(parts[1]) - 1);
+          if (idx < startIdx) startIdx = idx;
+        }
+      }
+      for (const exp of state.expenses) {
+        const parts = String(exp.date || '').split('-');
+        if (parts.length >= 2 && Number(parts[0]) && Number(parts[1])) {
+          const idx = Number(parts[0]) * 12 + (Number(parts[1]) - 1);
+          if (idx < startIdx) startIdx = idx;
+        }
+      }
+
+      let cumHusband = 0;
+      let cumWife = 0;
+
+      for (let idx = startIdx; idx <= targetIdx; idx += 1) {
+        const y = Math.floor(idx / 12);
+        const m = (idx % 12) + 1;
+        const cf = getMonthlyCashFlow(y, m);
+        cumHusband += cf.balHusband;
+        cumWife += cf.balWife;
+      }
+
+      return {
+        cumHusband,
+        cumWife,
+        cumTotal: cumHusband + cumWife
+      };
+    }
+
+    // =========================================================================
+    // 6. ROLE & 2-PERSON SECURITY LOCK HELPERS
+    // =========================================================================
+    function updateMyRoleHeaderUI() {
+      const emojiEl = document.getElementById('myRoleBtnEmoji');
+      const labelEl = document.getElementById('myRoleBtnLabel');
+      const btn = document.getElementById('openMyRoleBtn');
+      const isWife = state.myRole === '아내';
+      if (emojiEl) emojiEl.textContent = isWife ? '👩' : '👨';
+      if (labelEl) labelEl.textContent = isWife ? '아내' : '남편';
+      if (btn) {
+        btn.className = isWife
+          ? 'px-2.5 py-2 rounded-xl bg-wife-bg hover:bg-pink-100 text-wife-text flex items-center gap-1'
+          : 'px-2.5 py-2 rounded-xl bg-husband-bg hover:bg-blue-100 text-husband-text flex items-center gap-1';
+      }
+      document.querySelectorAll('.my-role-option-btn').forEach((opt) => {
+        const active = opt.dataset.myRole === state.myRole;
+        if (active) {
+          opt.className = opt.dataset.myRole === '아내'
+            ? 'my-role-option-btn py-5 px-3 rounded-2xl border-2 border-pink-500 bg-wife-bg text-wife-text flex flex-col items-center gap-2 shadow-sm'
+            : 'my-role-option-btn py-5 px-3 rounded-2xl border-2 border-blue-500 bg-husband-bg text-husband-text flex flex-col items-center gap-2 shadow-sm';
+        } else {
+          opt.className = 'my-role-option-btn py-5 px-3 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-600 flex flex-col items-center gap-2';
+        }
+      });
+    }
+
+    function setMyRole(role, silent = false) {
+      state.myRole = normalizePayer(role);
+      state.capturePayer = state.myRole;
+      safeSetStorage('couple_my_role', state.myRole);
+      updateMyRoleHeaderUI();
+      updateCapturePayerUI();
+      if (!silent) {
+        showToast(`내 정보가 '${state.myRole}'으로 설정되었습니다.`, 'save');
+      }
+    }
+
+    function autoDetectRoleFromEmail(email) {
+      const em = normalizeEmail(email);
+      const hEm = normalizeEmail(state.security.husbandEmail);
+      const wEm = normalizeEmail(state.security.wifeEmail);
+      if (wEm && em === wEm) setMyRole('아내', true);
+      else if (hEm && em === hEm) setMyRole('남편', true);
+    }
+
+    function isEmailAllowed(email) {
+      if (!state.security.lockEnabled) return true;
+      const em = normalizeEmail(email);
+      if (!em) return false;
+      const hEm = normalizeEmail(state.security.husbandEmail);
+      const wEm = normalizeEmail(state.security.wifeEmail);
+      if (!hEm && !wEm) return true;
+      return em === hEm || em === wEm;
+    }
+
+    function showAuthError(msg) {
+      const el = document.getElementById('authErrorMsg');
+      if (!el) return;
+      if (msg) {
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      } else {
+        el.textContent = '';
+        el.classList.add('hidden');
+      }
+    }
+
+    function renderAuthGate() {
+      const gate = document.getElementById('authGateOverlay');
+      const blockedBox = document.getElementById('authBlockedBox');
+      const blockedEmailEl = document.getElementById('authBlockedEmail');
+      const loginBox = document.getElementById('authLoginBox');
+      const demoSec = document.getElementById('demoAuthSection');
+      const titleEl = document.getElementById('authGateTitle');
+
+      if (titleEl) titleEl.textContent = state.settings.coupleTitle || '우리 부부 가계부';
+      if (demoSec) demoSec.classList.toggle('hidden', IS_LIVE_PROD);
+
+      if (!IS_LIVE_PROD && !state.authUser) {
+        gate.classList.add('hidden');
+        return;
+      }
+
+      if (!state.authUser) {
+        gate.classList.remove('hidden');
+        blockedBox.classList.add('hidden');
+        loginBox.classList.remove('hidden');
+        return;
+      }
+
+      if (isEmailAllowed(state.authUser.email)) {
+        gate.classList.add('hidden');
+      } else {
+        gate.classList.remove('hidden');
+        blockedBox.classList.remove('hidden');
+        loginBox.classList.add('hidden');
+        if (blockedEmailEl) blockedEmailEl.textContent = state.authUser.email;
+      }
+    }
+
+    function buildFirestoreRulesSnippet() {
+      const hEmail = normalizeEmail(state.security.husbandEmail) || 'husband@gmail.com';
+      const wEmail = normalizeEmail(state.security.wifeEmail) || 'wife@gmail.com';
+      return `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /artifacts/${APP_ID}/public/data/{document=**} {
+      allow read, write: if request.auth != null
+        && (
+          request.auth.token.email == "${hEmail}" ||
+          request.auth.token.email == "${wEmail}"
+        );
+    }
+  }
+}`;
+    }
+
+    function renderSecurityModal() {
+      const emailEl = document.getElementById('secCurrentEmail');
+      const roleAccEl = document.getElementById('myRoleAccountEmail');
+      const lockToggle = document.getElementById('secLockToggle');
+      const hInput = document.getElementById('secHusbandEmail');
+      const wInput = document.getElementById('secWifeEmail');
+      const rulesPre = document.getElementById('serverRulesPreview');
+
+      const curEmail = state.authUser?.email || '로그인되지 않음';
+      if (emailEl) emailEl.textContent = curEmail;
+      if (roleAccEl) roleAccEl.textContent = curEmail;
+      if (lockToggle) lockToggle.checked = state.security.lockEnabled !== false;
+      if (hInput && document.activeElement !== hInput) hInput.value = state.security.husbandEmail || '';
+      if (wInput && document.activeElement !== wInput) wInput.value = state.security.wifeEmail || '';
+      if (rulesPre) rulesPre.textContent = buildFirestoreRulesSnippet();
+    }
+
+    function completeAuthSession(email, provider = 'email') {
+      state.authUser = { email: normalizeEmail(email), provider };
+      saveCachedAuthSession(email, provider);
+      autoDetectRoleFromEmail(email);
+      renderSecurityModal();
+      renderAuthGate();
+      if (isEmailAllowed(email)) {
+        showToast(`${email} 계정으로 입장했습니다.`, 'lock');
+      } else {
+        showToast('허용되지 않은 계정입니다.', 'warn');
+      }
+    }
+
+    // =========================================================================
+    // 7. VISUALS & UI RENDERING
+    // =========================================================================
+    let lastVisualSignature = '';
+    function applyProfileVisuals() {
+      const { coupleTitle, bannerPhoto, husbandPhoto, wifePhoto } = state.settings;
+      const sig = `${coupleTitle}|${bannerPhoto?.slice(0, 48)}|${husbandPhoto?.slice(0, 48)}|${wifePhoto?.slice(0, 48)}`;
+
+      const hTitle = document.getElementById('headerAppTitle');
+      const bTitle = document.getElementById('bannerCoupleTitle');
+      if (hTitle) hTitle.textContent = coupleTitle || '우리 부부 가계부';
+      if (bTitle) bTitle.textContent = coupleTitle || '우리 부부 가계부';
+
+      if (sig === lastVisualSignature) return;
+      lastVisualSignature = sig;
+
+      const bannerImg = document.getElementById('coupleBannerImg');
+      if (bannerImg) {
+        if (bannerPhoto) {
+          bannerImg.src = bannerPhoto;
+          bannerImg.classList.remove('hidden');
+        } else {
+          bannerImg.classList.add('hidden');
+          bannerImg.src = '';
+        }
+      }
+
+      const headerWrap = document.getElementById('headerAvatarsWrap');
+      if (headerWrap) {
+        const hHtml = husbandPhoto
+          ? `<img src="${husbandPhoto}" alt="남편" class="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm" />`
+          : `<div class="w-8 h-8 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center shadow-sm text-sm">👨</div>`;
+        const wHtml = wifePhoto
+          ? `<img src="${wifePhoto}" alt="아내" class="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm" />`
+          : `<div class="w-8 h-8 rounded-full border-2 border-white bg-pink-100 flex items-center justify-center shadow-sm text-sm">👩</div>`;
+        headerWrap.innerHTML = hHtml + wHtml;
+      }
+
+      const dashH = document.getElementById('dashHusbandAvatar');
+      const dashW = document.getElementById('dashWifeAvatar');
+      if (dashH) {
+        dashH.innerHTML = husbandPhoto
+          ? `<img src="${husbandPhoto}" alt="남편" class="w-5 h-5 rounded-full object-cover" />`
+          : '👨';
+      }
+      if (dashW) {
+        dashW.innerHTML = wifePhoto
+          ? `<img src="${wifePhoto}" alt="아내" class="w-5 h-5 rounded-full object-cover" />`
+          : '👩';
+      }
+    }
+
+    function updateMonthHeader() {
+      const label = document.getElementById('currentMonthLabel');
+      if (label) label.textContent = `${state.year}년 ${state.month}월`;
+    }
+
+    function renderCurrentView() {
+      updateMonthHeader();
+      if (state.activeTab === 'dashboard') renderDashboard();
+      else if (state.activeTab === 'list') renderExpenseList();
+      else if (state.activeTab === 'recurring') renderRecurringTab();
+      else if (state.activeTab === 'capture') renderReviewList();
+    }
+
+    function renderDashboard() {
+      const snap = getMonthSnapshot(state.year, state.month);
+      const budget = Math.max(0, Number(state.settings.monthlyBudget) || 2000000);
+
+      document.getElementById('dashTotalAmount').textContent = formatKRW(snap.total);
+      document.getElementById('dashBudgetLabel').textContent = formatKRW(budget);
+      document.getElementById('dashRegularAmount').textContent = formatKRW(snap.regularSum);
+      document.getElementById('dashInstallmentAmount').textContent = formatKRW(snap.installmentSum);
+      document.getElementById('dashFixedAmount').textContent = formatKRW(snap.fixedSum);
+      document.getElementById('dashCardAmount').textContent = formatKRW(snap.cardSum);
+      document.getElementById('dashCashAmount').textContent = formatKRW(snap.cashSum);
+
+      const pct = budget > 0 ? Math.round((snap.total / budget) * 100) : 0;
+      const remain = budget - snap.total;
+      const bar = document.getElementById('dashBudgetBar');
+      document.getElementById('dashBudgetStatusText').textContent = `예산 대비 ${pct}% 사용`;
+      const remainEl = document.getElementById('dashBudgetRemainText');
+      if (remain >= 0) {
+        remainEl.textContent = `${formatKRW(remain)} 남음`;
+        remainEl.className = 'font-bold text-emerald-600';
+        bar.className = 'h-full bg-gray-900 rounded-full transition-all duration-300';
+      } else {
+        remainEl.textContent = `${formatKRW(Math.abs(remain))} 초과`;
+        remainEl.className = 'font-bold text-rose-600';
+        bar.className = 'h-full bg-rose-500 rounded-full transition-all duration-300';
+      }
+      bar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+
+      // Real-Time Cash Balance Card (Cumulative across months up to selected month)
+      const cf = getMonthlyCashFlow(state.year, state.month);
+      const cum = getCumulativeCashBalance(state.year, state.month);
+
+      document.querySelectorAll('.cash-scope-btn').forEach((btn) => {
+        const active = btn.dataset.cashScope === state.cashScope;
+        btn.className = active
+          ? 'cash-scope-btn py-1.5 rounded-lg text-xs font-bold bg-white text-gray-900 shadow-sm'
+          : 'cash-scope-btn py-1.5 rounded-lg text-xs font-medium text-gray-500';
+      });
+
+      const scope = state.cashScope;
+      const displayBal = scope === '남편' ? cum.cumHusband : scope === '아내' ? cum.cumWife : cum.cumTotal;
+      const displayIn = scope === '남편' ? cf.inHusband : scope === '아내' ? cf.inWife : cf.inTotal;
+      const displayBill = scope === '남편' ? cf.billHusband : scope === '아내' ? cf.billWife : cf.billTotal;
+      const displayOut = scope === '남편' ? cf.outHusband : scope === '아내' ? cf.outWife : cf.outTotal;
+
+      document.getElementById('dashCashScopeLabel').textContent =
+        scope === '공동' ? `${state.month}월 기준 부부 누적 현금 잔액` : `${state.month}월 기준 ${scope} 누적 현금 잔액`;
+      document.getElementById('dashIncomeCountLabel').textContent = String(cf.monthIncomes.length);
+
+      const balEl = document.getElementById('dashCashBalanceAmount');
+      balEl.textContent = formatKRW(displayBal);
+      balEl.className = displayBal < 0
+        ? 'text-2xl font-extrabold text-rose-600 tracking-tight mt-1'
+        : 'text-2xl font-extrabold text-gray-900 tracking-tight mt-1';
+
+      const splitRow = document.getElementById('dashCashSplitRow');
+      if (scope === '공동') {
+        splitRow.classList.remove('hidden');
+        document.getElementById('dashCashHusbandBal').textContent = formatKRW(cum.cumHusband);
+        document.getElementById('dashCashWifeBal').textContent = formatKRW(cum.cumWife);
+      } else {
+        splitRow.classList.add('hidden');
+      }
+
+      document.getElementById('dashCashMonthIn').textContent = `+${formatKRW(displayIn)}`;
+      document.getElementById('dashCashThisBillLabel').textContent = `${state.month}월 결제예정`;
+      document.getElementById('dashCashThisBillAmt').textContent = `-${formatKRW(displayBill)}`;
+      document.getElementById('dashCashMonthOut').textContent = `-${formatKRW(displayOut)}`;
+
+      // Next Month Expected Payment Card
+      const next = getAdjacentYearMonth(state.year, state.month, 1);
+      const nextBill = getBillingSummaryForMonth(next.year, next.month);
+      const nextScoped = nextBill.byScope(state.nextScope);
+
+      document.getElementById('dashNextMonthTitle').textContent = `📅 ${next.year}년 ${next.month}월 결제 예정 금액`;
+      document.getElementById('dashNextInstLabel').textContent = `🗓️ ${next.month}월 할부`;
+
+      document.querySelectorAll('.next-scope-btn').forEach((btn) => {
+        const active = btn.dataset.nextScope === state.nextScope;
+        btn.className = active
+          ? 'next-scope-btn py-1.5 rounded-lg text-xs font-bold bg-white text-gray-900 shadow-sm'
+          : 'next-scope-btn py-1.5 rounded-lg text-xs font-medium text-gray-500';
+      });
+
+      document.getElementById('dashNextScopeLabel').textContent =
+        state.nextScope === '공동'
+          ? `남편 + 아내 ${next.month}월 총 결제 예정`
+          : `${state.nextScope} ${next.month}월 결제 예정`;
+      document.getElementById('dashNextTotalAmount').textContent = formatKRW(nextScoped.total);
+
+      const nextSplitRow = document.getElementById('dashNextSplitRow');
+      if (state.nextScope === '공동') {
+        nextSplitRow.classList.remove('hidden');
+        document.getElementById('dashNextHusbandAmt').textContent = formatKRW(nextBill.husbandTotal);
+        document.getElementById('dashNextWifeAmt').textContent = formatKRW(nextBill.wifeTotal);
+      } else {
+        nextSplitRow.classList.add('hidden');
+      }
+
+      document.getElementById('dashNextCardAmt').textContent = formatKRW(nextScoped.card);
+      document.getElementById('dashNextInstAmt').textContent = formatKRW(nextScoped.inst);
+      document.getElementById('dashNextFixedAmt').textContent = formatKRW(nextScoped.fixed);
+
+      // Payer Comparison
+      document.getElementById('dashCountBadge').textContent = `총 ${snap.totalCount}건`;
+      document.getElementById('dashHusbandAmount').textContent = formatKRW(snap.husbandSum);
+      document.getElementById('dashWifeAmount').textContent = formatKRW(snap.wifeSum);
+
+      const hPct = snap.total > 0 ? Math.round((snap.husbandSum / snap.total) * 100) : 0;
+      const wPct = snap.total > 0 ? Math.max(0, 100 - hPct) : 0;
+      document.getElementById('dashHusbandPct').textContent = `${hPct}%`;
+      document.getElementById('dashWifePct').textContent = `${wPct}%`;
+      document.getElementById('dashBarHusband').style.width = `${hPct}%`;
+      document.getElementById('dashBarWife').style.width = `${wPct}%`;
+
+      // Category Breakdown
+      const catList = document.getElementById('dashCategoryList');
+      const sortedCats = Object.entries(snap.catTotals)
+        .filter(([, amt]) => amt > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sortedCats.length === 0) {
+        catList.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">이번 달 지출 내역이 아직 없습니다.</p>`;
+      } else {
+        catList.innerHTML = sortedCats.map(([catName, amt]) => {
+          const meta = CATEGORY_MAP[catName] || { emoji: '📌', color: '#6b7280' };
+          const share = snap.total > 0 ? Math.round((amt / snap.total) * 100) : 0;
+          return `
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-sm">${meta.emoji}</span>
+                  <span class="font-bold text-gray-800 truncate">${escapeHtml(catName)}</span>
+                  <span class="text-[11px] font-semibold text-gray-400">${share}%</span>
+                </div>
+                <span class="font-extrabold text-gray-900 shrink-0">${formatKRW(amt)}</span>
+              </div>
+              <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="width:${share}%; background-color:${meta.color};"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderExpenseList() {
+      const snap = getMonthSnapshot(state.year, state.month);
+      let filtered = snap.items.filter((item) => {
+        if (state.payerFilter !== '전체' && item.payer !== state.payerFilter) return false;
+        if (state.methodFilter !== '전체' && item.paymentMethod !== state.methodFilter) return false;
+        if (state.categoryFilter !== '전체' && item.category !== state.categoryFilter) return false;
+        return true;
+      });
+
+      filtered.sort((a, b) => {
+        const keyA = `${a.date} ${a.time || '00:00'}`;
+        const keyB = `${b.date} ${b.time || '00:00'}`;
+        return keyB.localeCompare(keyA);
+      });
+
+      const sum = filtered.reduce((acc, it) => acc + it.effectiveAmount, 0);
+      document.getElementById('listFilterCount').textContent = `총 ${filtered.length}건 (변동 + 할부)`;
+      document.getElementById('listFilterSum').textContent = formatKRW(sum);
+
+      // Update Bulk Delete UI
+      const bulkBar = document.getElementById('bulkDeleteControlBar');
+      const toggleBtn = document.getElementById('toggleBulkDeleteBtn');
+      if (state.bulkDeleteMode) {
+        bulkBar.classList.remove('hidden');
+        toggleBtn.classList.add('hidden');
+        const validIds = new Set(filtered.map((it) => it.id));
+        state.bulkSelectedIds.forEach((id) => {
+          if (!validIds.has(id)) state.bulkSelectedIds.delete(id);
+        });
+        const selCount = state.bulkSelectedIds.size;
+        document.getElementById('bulkSelectedCountText').textContent = String(selCount);
+        document.getElementById('confirmBulkDeleteBtn').textContent = `선택 삭제 (${selCount}건)`;
+        const selectAllCb = document.getElementById('bulkSelectAllCheckbox');
+        if (selectAllCb) selectAllCb.checked = filtered.length > 0 && selCount === filtered.length;
+      } else {
+        bulkBar.classList.add('hidden');
+        toggleBtn.classList.remove('hidden');
+      }
+
+      const container = document.getElementById('expenseListContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-3xl p-8 text-center border border-gray-100">
+            <p class="text-sm font-bold text-gray-700">표시할 지출 내역이 없어요</p>
+            <p class="text-xs text-gray-400 mt-1">오른쪽 아래 '+ 직접 입력'이나 '캡처 등록'으로 추가해 보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const groups = {};
+      for (const item of filtered) {
+        if (!groups[item.date]) groups[item.date] = [];
+        groups[item.date].push(item);
+      }
+
+      container.innerHTML = Object.entries(groups).map(([dateStr, dayItems]) => {
+        const dayTotal = dayItems.reduce((acc, it) => acc + it.effectiveAmount, 0);
+        const rowsHtml = dayItems.map((item) => {
+          const meta = CATEGORY_MAP[item.category] || { emoji: '📌' };
+          const isWife = item.payer === '아내';
+          const payerBadge = isWife
+            ? `<span class="px-1.5 py-0.5 rounded-md bg-wife-bg text-wife-text text-[10px] font-bold">👩 아내</span>`
+            : `<span class="px-1.5 py-0.5 rounded-md bg-husband-bg text-husband-text text-[10px] font-bold">👨 남편</span>`;
+          const methodBadge = item.paymentMethod === '현금'
+            ? `<span class="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">💵 현금·이체</span>`
+            : `<span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold">💳 카드</span>`;
+          const instBadge = item.isInstallment
+            ? `<span class="px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-bold">${item.currentRound}/${item.totalRounds}개월</span>`
+            : '';
+          const timeTag = item.time ? `<span class="text-[10px] text-gray-400 font-medium">${escapeHtml(item.time)}</span>` : '';
+
+          const isChecked = state.bulkSelectedIds.has(item.id);
+          const rowAction = state.bulkDeleteMode
+            ? `onclick="window.toggleBulkSelectItem('${escapeHtml(item.id)}')"`
+            : `onclick="window.openEditExpenseModal('${escapeHtml(item.id)}')"`;
+
+          return `
+            <div ${rowAction} class="flex items-center justify-between gap-2.5 py-3 px-3.5 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors">
+              <div class="flex items-center gap-2.5 min-w-0">
+                ${state.bulkDeleteMode ? `<input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); window.toggleBulkSelectItem('${escapeHtml(item.id)}')" class="w-4 h-4 rounded accent-rose-600 shrink-0" />` : ''}
+                <div class="w-9 h-9 rounded-2xl bg-gray-100 flex items-center justify-center text-base shrink-0">${meta.emoji}</div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-gray-900 truncate">${escapeHtml(item.merchant)}</p>
+                  <div class="flex items-center gap-1 flex-wrap mt-1">
+                    ${payerBadge}
+                    ${methodBadge}
+                    ${instBadge}
+                    ${timeTag}
+                  </div>
+                </div>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="text-xs font-extrabold text-gray-900">${formatKRW(item.effectiveAmount)}</p>
+                ${item.isInstallment ? `<p class="text-[10px] text-gray-400 mt-0.5">총 ${formatKRW(item.amount)}</p>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="bg-white rounded-3xl overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100">
+            <div class="px-4 py-2.5 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
+              <span class="text-xs font-bold text-gray-700">${escapeHtml(dateStr)}</span>
+              <span class="text-xs font-bold text-gray-500">${formatKRW(dayTotal)}</span>
+            </div>
+            <div class="divide-y divide-gray-100">${rowsHtml}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.toggleBulkSelectItem = function (id) {
+      if (state.bulkSelectedIds.has(id)) state.bulkSelectedIds.delete(id);
+      else state.bulkSelectedIds.add(id);
+      renderExpenseList();
+    };
+
+    function renderRecurringTab() {
+      const snap = getMonthSnapshot(state.year, state.month);
+      document.getElementById('recurringFixedSum').textContent = formatKRW(snap.fixedSum);
+      document.getElementById('recurringInstSum').textContent = formatKRW(snap.installmentSum);
+
+      const fixedBox = document.getElementById('fixedListContainer');
+      if (state.fixedExpenses.length === 0) {
+        fixedBox.innerHTML = `<div class="bg-white rounded-2xl p-5 text-center text-xs text-gray-400 border border-gray-100">등록된 고정 지출이 없습니다.</div>`;
+      } else {
+        fixedBox.innerHTML = state.fixedExpenses.map((f) => {
+          const meta = CATEGORY_MAP[f.category] || { emoji: '📌' };
+          const payer = normalizePayer(f.payer);
+          const isActive = f.active !== false;
+          return `
+            <div class="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm flex items-center justify-between gap-2 ${isActive ? '' : 'opacity-55'}">
+              <div onclick="window.openEditFixedModal('${escapeHtml(f.id)}')" class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-base shrink-0">${meta.emoji}</div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-gray-900 truncate">${escapeHtml(f.name)}</p>
+                  <p class="text-[11px] text-gray-400 mt-0.5">${payer === '아내' ? '👩 아내' : '👨 남편'} · 매월 ${f.billingDay || 25}일</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-gray-900">${formatKRW(f.amount)}</span>
+                <button type="button" onclick="window.toggleFixedActive('${escapeHtml(f.id)}')" class="px-2 py-1 rounded-lg text-[10px] font-bold ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}">
+                  ${isActive ? '활성' : '중지'}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const instBox = document.getElementById('installmentListContainer');
+      const instItems = snap.items.filter((it) => it.isInstallment);
+      if (instItems.length === 0) {
+        instBox.innerHTML = `<div class="bg-white rounded-2xl p-5 text-center text-xs text-gray-400 border border-gray-100">이번 달 납부 중인 할부 내역이 없습니다.</div>`;
+      } else {
+        instBox.innerHTML = instItems.map((it) => {
+          const meta = CATEGORY_MAP[it.category] || { emoji: '📌' };
+          return `
+            <div onclick="window.openEditExpenseModal('${escapeHtml(it.id)}')" class="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm flex items-center justify-between gap-2 cursor-pointer">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-base shrink-0">${meta.emoji}</div>
+                <div class="min-w-0">
+                  <p class="text-xs font-bold text-gray-900 truncate">${escapeHtml(it.merchant)}</p>
+                  <p class="text-[11px] text-indigo-600 font-semibold mt-0.5">${it.payer === '아내' ? '👩 아내' : '👨 남편'} · ${it.currentRound}/${it.totalRounds}회차 (총 ${formatKRW(it.amount)})</p>
+                </div>
+              </div>
+              <span class="text-xs font-extrabold text-indigo-950 shrink-0">${formatKRW(it.effectiveAmount)}/월</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    window.toggleFixedActive = async function (id) {
+      const target = state.fixedExpenses.find((f) => f.id === id);
+      if (!target) return;
+      await saveFixedRecord({ ...target, active: target.active === false });
+      showToast('고정 지출 상태가 변경되었습니다.', 'save');
+    };
+
+    // =========================================================================
+    // 8. AI SCREENSHOT ANALYZER (MULTI-IMAGE UP TO 10 + DUPLICATE CHECK)
+    // =========================================================================
+    function updateCapturePayerUI() {
+      document.querySelectorAll('.capture-payer-btn').forEach((btn) => {
+        const active = btn.dataset.capturePayer === state.capturePayer;
+        if (active) {
+          btn.className = btn.dataset.capturePayer === '아내'
+            ? 'capture-payer-btn py-3.5 px-3 rounded-2xl border-2 border-pink-500 bg-wife-bg text-wife-text font-bold text-sm flex items-center justify-center gap-1.5'
+            : 'capture-payer-btn py-3.5 px-3 rounded-2xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-sm flex items-center justify-center gap-1.5';
+        } else {
+          btn.className = 'capture-payer-btn py-3.5 px-3 rounded-2xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-sm flex items-center justify-center gap-1.5';
+        }
+      });
+    }
+
+    function isDuplicateCandidate(candidate, extraPool = []) {
+      const cDate = String(candidate.date || '').trim();
+      const cTime = String(candidate.time || '').trim();
+      const cMerch = String(candidate.merchant || '').trim().toLowerCase();
+      const cAmt = Math.round(Number(candidate.amount) || 0);
+      if (!cDate || !cMerch || cAmt <= 0) return false;
+
+      const allExisting = [...state.expenses, ...extraPool];
+      return allExisting.some((ex) => {
+        const exDate = String(ex.date || '').trim();
+        const exTime = String(ex.time || '').trim();
+        const exMerch = String(ex.merchant || '').trim().toLowerCase();
+        const exAmt = Math.round(Number(ex.amount) || 0);
+        if (exDate !== cDate || exMerch !== cMerch || exAmt !== cAmt) return false;
+        if (cTime && exTime) return cTime === exTime;
+        return true;
+      });
+    }
+
+    async function analyzeSingleReceiptImage(dataUrl) {
+      const apiKey = DEPLOY_CONFIG.geminiApiKey;
+      const base64Data = dataUrl.split(',')[1];
+      const mimeType = dataUrl.split(';')[0].replace('data:', '') || 'image/jpeg';
+
+      const prompt = `당신은 한국 부부 가계부 정산 전문가입니다. 업로드된 카드 승인 내역, 은행 계좌이체 내역, 쇼핑몰 결제 내역 스크린샷에서 모든 지출 항목을 추출하세요.
+반드시 아래 JSON 배열 형식으로만 응답하세요(마크다운 백틱 없이 순수 JSON만 출력):
+[
+  {
+    "date": "YYYY-MM-DD (연도가 안 보이면 ${state.year}년 사용)",
+    "time": "HH:MM (24시간 형식, 시간 정보가 없으면 빈 문자열 '')",
+    "merchant": "가맹점명 또는 이체 대상",
+    "amount": 숫자(원 단위 정수, 취소건은 제외),
+    "paymentMethod": "카드 또는 현금 (계좌이체/출금/현금영수증이면 '현금', 신용/체크카드면 '카드')",
+    "category": "다음 중 정확히 하나: 식비, 카페·간식, 장보기·생활, 교통·차량, 쇼핑·의류, 주거·관리, 의료·건강, 문화·여행, 경조사·선물, 구독·통신, 기타",
+    "installmentMonths": 숫자(일시불이면 1, 3개월 할부면 3 등)
+  }
+]`;
+
+      const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: base64Data } }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}: ${errText.slice(0, 120)}`);
+      }
+
+      const data = await res.json();
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      const cleaned = rawText.replace(/```json|```/gi, '').trim();
+      const parsed = JSON.parse(cleaned);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    async function handleCaptureFilesUpload(fileList) {
+      const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'));
+      if (files.length === 0) return;
+
+      const selectedFiles = files.slice(0, 10);
+      if (files.length > 10) {
+        showToast('최대 10장까지 한 번에 분석할 수 있어 앞 10장만 선택했습니다.', 'warn');
+      }
+
+      const uploadPanel = document.getElementById('captureUploadPanel');
+      const loadingPanel = document.getElementById('captureLoadingPanel');
+      const reviewPanel = document.getElementById('captureReviewPanel');
+      const previewImg = document.getElementById('capturePreviewImg');
+      const badgeEl = document.getElementById('captureBatchBadge');
+      const titleEl = document.getElementById('captureLoadingTitle');
+
+      uploadPanel.classList.add('hidden');
+      reviewPanel.classList.add('hidden');
+      loadingPanel.classList.remove('hidden');
+
+      const collected = [];
+      let failedCount = 0;
+      let lastErrorMsg = '';
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        if (badgeEl) {
+          badgeEl.classList.remove('hidden');
+          badgeEl.textContent = `${i + 1} / ${selectedFiles.length}장`;
+        }
+        if (titleEl) {
+          titleEl.textContent = selectedFiles.length > 1
+            ? `AI가 캡처 ${i + 1}/${selectedFiles.length}장을 분석하고 있어요`
+            : 'AI가 이용내역을 분석하고 있어요';
+        }
+
+        try {
+          const dataUrl = await resizeImageToDataUrl(selectedFiles[i], 1280, 0.85);
+          if (previewImg) previewImg.src = dataUrl;
+          const items = await analyzeSingleReceiptImage(dataUrl);
+
+          for (const raw of items) {
+            const normItem = {
+              date: raw.date || getTodayISO(),
+              time: String(raw.time || '').trim(),
+              merchant: String(raw.merchant || '사용처').trim(),
+              amount: Math.max(0, Math.round(Number(raw.amount) || 0)),
+              paymentMethod: normalizeMethod(raw.paymentMethod),
+              category: CATEGORY_MAP[raw.category] ? raw.category : '기타',
+              installmentMonths: Math.max(1, Math.min(60, Math.round(Number(raw.installmentMonths) || 1))),
+              payer: state.capturePayer
+            };
+            const dup = isDuplicateCandidate(normItem, collected);
+            collected.push({
+              ...normItem,
+              checked: !dup,
+              isDuplicate: dup
+            });
+          }
+        } catch (err) {
+          failedCount += 1;
+          lastErrorMsg = err?.message || String(err);
+          console.warn('Receipt AI analyze error:', err);
+        }
+      }
+
+      loadingPanel.classList.add('hidden');
+
+      if (collected.length === 0) {
+        uploadPanel.classList.remove('hidden');
+        showToast(
+          failedCount > 0
+            ? `이미지 분석 실패 (${lastErrorMsg.slice(0, 45)})`
+            : '인식된 결제 내역이 없습니다. 선명한 캡처로 다시 시도해 주세요.',
+          'warn'
+        );
+        return;
+      }
+
+      state.reviewItems = collected;
+      reviewPanel.classList.remove('hidden');
+      renderReviewList();
+      showToast(`${collected.length}건의 내역을 추출했습니다!`, 'ai');
+    }
+
+    function renderReviewList() {
+      const container = document.getElementById('reviewItemsContainer');
+      const countLabel = document.getElementById('reviewCountLabel');
+      const saveBtnText = document.getElementById('batchSaveBtnText');
+      const selectAllCb = document.getElementById('reviewSelectAllCheckbox');
+
+      const checkedCount = state.reviewItems.filter((it) => it.checked).length;
+      if (countLabel) countLabel.textContent = String(state.reviewItems.length);
+      if (saveBtnText) saveBtnText.textContent = `선택한 ${checkedCount}건 일괄 저장`;
+      if (selectAllCb) {
+        selectAllCb.checked = state.reviewItems.length > 0 && checkedCount === state.reviewItems.length;
+      }
+
+      if (!container) return;
+      container.innerHTML = state.reviewItems.map((item, idx) => {
+        const catOptions = CATEGORIES.map((c) =>
+          `<option value="${c.name}" ${item.category === c.name ? 'selected' : ''}>${c.emoji} ${c.name}</option>`
+        ).join('');
+
+        return `
+          <div class="bg-white rounded-2xl p-3.5 border ${item.isDuplicate ? 'border-amber-300 bg-amber-50/30' : 'border-gray-100'} shadow-sm space-y-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.updateReviewItem(${idx}, 'checked', this.checked)" class="w-4 h-4 rounded accent-gray-900" />
+                <span class="text-xs font-bold text-gray-800">#${idx + 1}</span>
+                ${item.isDuplicate ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">⚠️ 중복 의심 (체크 시 강제저장)</span>` : ''}
+              </label>
+              <button type="button" onclick="window.removeReviewItem(${idx})" class="text-xs text-gray-400 hover:text-red-500 px-1.5 py-0.5">삭제</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" value="${escapeHtml(item.merchant)}" onchange="window.updateReviewItem(${idx}, 'merchant', this.value)" placeholder="가맹점" class="px-2.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-900" />
+              <input type="number" inputmode="numeric" value="${item.amount}" onchange="window.updateReviewItem(${idx}, 'amount', Number(this.value))" placeholder="금액" class="px-2.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-xs font-extrabold text-gray-900 text-right" />
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5">
+              <input type="date" value="${escapeHtml(item.date)}" onchange="window.updateReviewItem(${idx}, 'date', this.value)" class="px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[11px] font-semibold text-gray-700" />
+              <input type="time" value="${escapeHtml(item.time || '')}" onchange="window.updateReviewItem(${idx}, 'time', this.value)" class="px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[11px] font-semibold text-gray-700" />
+              <select onchange="window.updateReviewItem(${idx}, 'category', this.value)" class="px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[11px] font-semibold text-gray-700">
+                ${catOptions}
+              </select>
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5">
+              <select onchange="window.updateReviewItem(${idx}, 'payer', this.value)" class="px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[11px] font-bold text-gray-800">
+                <option value="남편" ${item.payer === '남편' ? 'selected' : ''}>👨 남편</option>
+                <option value="아내" ${item.payer === '아내' ? 'selected' : ''}>👩 아내</option>
+              </select>
+              <select onchange="window.updateReviewItem(${idx}, 'paymentMethod', this.value)" class="px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[11px] font-bold text-gray-800">
+                <option value="카드" ${item.paymentMethod === '카드' ? 'selected' : ''}>💳 카드</option>
+                <option value="현금" ${item.paymentMethod === '현금' ? 'selected' : ''}>💵 현금·이체</option>
+              </select>
+              <select onchange="window.updateReviewItem(${idx}, 'installmentMonths', Number(this.value))" class="px-2 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[11px] font-bold text-indigo-700">
+                <option value="1" ${item.installmentMonths === 1 ? 'selected' : ''}>일시불</option>
+                <option value="2" ${item.installmentMonths === 2 ? 'selected' : ''}>2개월 할부</option>
+                <option value="3" ${item.installmentMonths === 3 ? 'selected' : ''}>3개월 할부</option>
+                <option value="6" ${item.installmentMonths === 6 ? 'selected' : ''}>6개월 할부</option>
+                <option value="10" ${item.installmentMonths === 10 ? 'selected' : ''}>10개월 할부</option>
+                <option value="12" ${item.installmentMonths === 12 ? 'selected' : ''}>12개월 할부</option>
+              </select>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.updateReviewItem = function (idx, field, val) {
+      if (!state.reviewItems[idx]) return;
+      state.reviewItems[idx][field] = val;
+      if (field !== 'checked') {
+        state.reviewItems[idx].isDuplicate = isDuplicateCandidate(state.reviewItems[idx]);
+      }
+      renderReviewList();
+    };
+
+    window.removeReviewItem = function (idx) {
+      state.reviewItems.splice(idx, 1);
+      renderReviewList();
+    };
+
+    // =========================================================================
+    // 9. MODAL OPENERS & FORM HELPERS
+    // =========================================================================
+    let currentFormPayer = state.myRole;
+    let currentFormMethod = '카드';
+
+    function updateFormPayerUI() {
+      document.querySelectorAll('.form-payer-btn').forEach((btn) => {
+        const active = btn.dataset.formPayer === currentFormPayer;
+        if (active) {
+          btn.className = btn.dataset.formPayer === '아내'
+            ? 'form-payer-btn py-2.5 rounded-xl border-2 border-pink-500 bg-wife-bg text-wife-text font-bold text-xs'
+            : 'form-payer-btn py-2.5 rounded-xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-xs';
+        } else {
+          btn.className = 'form-payer-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs';
+        }
+      });
+    }
+
+    function updateFormPaymentMethodUI() {
+      document.querySelectorAll('.form-method-btn').forEach((btn) => {
+        const active = btn.dataset.formMethod === currentFormMethod;
+        btn.className = active
+          ? 'form-method-btn py-2.5 rounded-xl border-2 border-gray-900 bg-gray-900 text-white font-bold text-xs'
+          : 'form-method-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs';
+      });
+    }
+
+    function updateInstallmentPreview() {
+      const amt = Number(document.getElementById('formAmount').value) || 0;
+      const preset = document.getElementById('formInstallmentPreset').value;
+      const customInput = document.getElementById('formInstallmentMonths');
+      const badge = document.getElementById('installmentPreviewBadge');
+
+      let months = 1;
+      if (preset === 'custom') {
+        customInput.classList.remove('hidden');
+        months = Math.max(2, Number(customInput.value) || 2);
+      } else {
+        customInput.classList.add('hidden');
+        months = Number(preset) || 1;
+      }
+
+      if (months > 1 && amt > 0) {
+        badge.classList.remove('hidden');
+        badge.textContent = `월 ${formatKRW(Math.round(amt / months))}`;
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function openAddExpenseModal(defaultInstallment = false) {
+      document.getElementById('expenseModalTitle').textContent = defaultInstallment ? '할부 내역 추가' : '지출 직접 입력';
+      document.getElementById('formExpenseId').value = '';
+      currentFormPayer = state.myRole;
+      currentFormMethod = '카드';
+      updateFormPayerUI();
+      updateFormPaymentMethodUI();
+
+      document.getElementById('formAmount').value = '';
+      document.getElementById('formMerchant').value = '';
+      const ym = getYearMonthKey(state.year, state.month);
+      const today = getTodayISO();
+      document.getElementById('formDate').value = today.startsWith(ym) ? today : `${ym}-01`;
+      document.getElementById('formTime').value = '';
+      document.getElementById('formCategory').value = '식비';
+      document.getElementById('formInstallmentPreset').value = defaultInstallment ? '3' : '1';
+      document.getElementById('deleteExpenseBtn').classList.add('hidden');
+      updateInstallmentPreview();
+      openModal('expenseModal');
+    }
+
+    window.openEditExpenseModal = function (id) {
+      const exp = state.expenses.find((e) => e.id === id);
+      if (!exp) return;
+      document.getElementById('expenseModalTitle').textContent = '지출 내역 수정';
+      document.getElementById('formExpenseId').value = exp.id;
+      currentFormPayer = normalizePayer(exp.payer);
+      currentFormMethod = normalizeMethod(exp.paymentMethod);
+      updateFormPayerUI();
+      updateFormPaymentMethodUI();
+
+      document.getElementById('formAmount').value = exp.amount;
+      document.getElementById('formMerchant').value = exp.merchant;
+      document.getElementById('formDate').value = exp.date;
+      document.getElementById('formTime').value = exp.time || '';
+      document.getElementById('formCategory').value = exp.category || '기타';
+
+      const m = Number(exp.installmentMonths) || 1;
+      const presetEl = document.getElementById('formInstallmentPreset');
+      if (['1', '2', '3', '6', '10', '12', '18', '24', '36'].includes(String(m))) {
+        presetEl.value = String(m);
+      } else {
+        presetEl.value = 'custom';
+        document.getElementById('formInstallmentMonths').value = m;
+      }
+      document.getElementById('deleteExpenseBtn').classList.remove('hidden');
+      updateInstallmentPreview();
+      openModal('expenseModal');
+    };
+
+    let currentFixedPayer = state.myRole;
+    function updateFixedFormPayerUI() {
+      document.querySelectorAll('.fixed-payer-btn').forEach((btn) => {
+        const active = btn.dataset.fixedPayer === currentFixedPayer;
+        if (active) {
+          btn.className = btn.dataset.fixedPayer === '아내'
+            ? 'fixed-payer-btn py-2.5 rounded-xl border-2 border-pink-500 bg-wife-bg text-wife-text font-bold text-xs'
+            : 'fixed-payer-btn py-2.5 rounded-xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-xs';
+        } else {
+          btn.className = 'fixed-payer-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs';
+        }
+      });
+    }
+
+    function openAddFixedModal() {
+      document.getElementById('fixedModalTitle').textContent = '고정 지출 추가';
+      document.getElementById('fixedFormId').value = '';
+      currentFixedPayer = state.myRole;
+      updateFixedFormPayerUI();
+      document.getElementById('fixedName').value = '';
+      document.getElementById('fixedAmount').value = '';
+      document.getElementById('fixedBillingDay').value = '25';
+      document.getElementById('fixedCategory').value = '주거·관리';
+      document.getElementById('deleteFixedBtn').classList.add('hidden');
+      openModal('fixedModal');
+    }
+
+    window.openEditFixedModal = function (id) {
+      const f = state.fixedExpenses.find((x) => x.id === id);
+      if (!f) return;
+      document.getElementById('fixedModalTitle').textContent = '고정 지출 수정';
+      document.getElementById('fixedFormId').value = f.id;
+      currentFixedPayer = normalizePayer(f.payer);
+      updateFixedFormPayerUI();
+      document.getElementById('fixedName').value = f.name;
+      document.getElementById('fixedAmount').value = f.amount;
+      document.getElementById('fixedBillingDay').value = f.billingDay || 25;
+      document.getElementById('fixedCategory').value = f.category || '기타';
+      document.getElementById('deleteFixedBtn').classList.remove('hidden');
+      openModal('fixedModal');
+    };
+
+    let currentIncomeOwner = state.myRole;
+    function updateIncomeOwnerUI() {
+      document.querySelectorAll('.income-owner-btn').forEach((btn) => {
+        const active = btn.dataset.incomeOwner === currentIncomeOwner;
+        if (active) {
+          btn.className = btn.dataset.incomeOwner === '아내'
+            ? 'income-owner-btn py-2.5 rounded-xl border-2 border-pink-500 bg-wife-bg text-wife-text font-bold text-xs'
+            : 'income-owner-btn py-2.5 rounded-xl border-2 border-blue-500 bg-husband-bg text-husband-text font-bold text-xs';
+        } else {
+          btn.className = 'income-owner-btn py-2.5 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-500 font-semibold text-xs';
+        }
+      });
+    }
+
+    function openAddIncomeModal() {
+      document.getElementById('incomeModalTitle').textContent = '💵 현금 입금 등록';
+      document.getElementById('incomeFormId').value = '';
+      currentIncomeOwner = state.myRole;
+      updateIncomeOwnerUI();
+      document.getElementById('incomeAmount').value = '';
+      document.getElementById('incomeSource').value = '';
+      const ym = getYearMonthKey(state.year, state.month);
+      const today = getTodayISO();
+      document.getElementById('incomeDate').value = today.startsWith(ym) ? today : `${ym}-10`;
+      document.getElementById('incomeCategory').value = '월급';
+      document.getElementById('deleteIncomeBtn').classList.add('hidden');
+      openModal('incomeModal');
+    }
+
+    window.openEditIncomeModal = function (id) {
+      const inc = state.incomes.find((x) => x.id === id);
+      if (!inc) return;
+      closeModal('incomeListModal');
+      document.getElementById('incomeModalTitle').textContent = '💵 현금 입금 수정';
+      document.getElementById('incomeFormId').value = inc.id;
+      currentIncomeOwner = normalizePayer(inc.owner);
+      updateIncomeOwnerUI();
+      document.getElementById('incomeAmount').value = inc.amount;
+      document.getElementById('incomeSource').value = inc.source;
+      document.getElementById('incomeDate').value = inc.date;
+      document.getElementById('incomeCategory').value = inc.category || '월급';
+      document.getElementById('deleteIncomeBtn').classList.remove('hidden');
+      openModal('incomeModal');
+    };
+
+    function openIncomeListModal() {
+      const ym = getYearMonthKey(state.year, state.month);
+      const list = state.incomes
+        .filter((inc) => String(inc.date || '').startsWith(ym))
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+      const sum = list.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+      document.getElementById('incomeListScopeText').textContent = `${state.year}년 ${state.month}월 입금 합계`;
+      document.getElementById('incomeListTotalSum').textContent = `+${formatKRW(sum)}`;
+
+      const box = document.getElementById('incomeListItems');
+      if (list.length === 0) {
+        box.innerHTML = `<p class="text-xs text-gray-400 text-center py-8">이번 달 등록된 현금 입금 내역이 없습니다.</p>`;
+      } else {
+        box.innerHTML = list.map((inc) => {
+          const owner = normalizePayer(inc.owner);
+          return `
+            <div onclick="window.openEditIncomeModal('${escapeHtml(inc.id)}')" class="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-100 flex items-center justify-between gap-2 cursor-pointer">
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-gray-900 truncate">${escapeHtml(inc.source)}</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">${owner === '아내' ? '👩 아내' : '👨 남편'} · ${escapeHtml(inc.date)} · ${escapeHtml(inc.category || '입금')}</p>
+              </div>
+              <span class="text-xs font-extrabold text-emerald-700 shrink-0">+${formatKRW(inc.amount)}</span>
+            </div>
+          `;
+        }).join('');
+      }
+      openModal('incomeListModal');
+    }
+
+    function renderMonthPickerGrid() {
+      document.getElementById('pickerYearLabel').textContent = `${state.pickerYear}년`;
+      const grid = document.getElementById('monthPickerGrid');
+      grid.innerHTML = Array.from({ length: 12 }, (_, idx) => {
+        const m = idx + 1;
+        const selected = state.pickerYear === state.year && m === state.month;
+        return `
+          <button type="button" onclick="window.selectPickedMonth(${m})" class="py-2.5 rounded-xl text-xs font-bold ${selected ? 'bg-gray-900 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-700'}">
+            ${m}월
+          </button>
+        `;
+      }).join('');
+    }
+
+    window.selectPickedMonth = function (m) {
+      state.year = state.pickerYear;
+      state.month = m;
+      closeModal('monthPickerModal');
+      renderCurrentView();
+    };
+
+    function openProfileModal() {
+      document.getElementById('profileTitleInput').value = state.settings.coupleTitle || '우리 부부 가계부';
+
+      const bPrev = document.getElementById('bannerPhotoPreview');
+      const bPlace = document.getElementById('bannerPhotoPlaceholder');
+      const bClear = document.getElementById('clearBannerPhotoBtn');
+      if (state.settings.bannerPhoto) {
+        bPrev.src = state.settings.bannerPhoto;
+        bPrev.classList.remove('hidden');
+        bPlace.classList.add('hidden');
+        bClear.classList.remove('hidden');
+      } else {
+        bPrev.classList.add('hidden');
+        bPlace.classList.remove('hidden');
+        bClear.classList.add('hidden');
+      }
+
+      const hPrev = document.getElementById('husbandPhotoPreview');
+      const hEmoji = document.getElementById('husbandPhotoEmoji');
+      const hClear = document.getElementById('clearHusbandPhotoBtn');
+      if (state.settings.husbandPhoto) {
+        hPrev.src = state.settings.husbandPhoto;
+        hPrev.classList.remove('hidden');
+        hEmoji.classList.add('hidden');
+        hClear.classList.remove('hidden');
+      } else {
+        hPrev.classList.add('hidden');
+        hEmoji.classList.remove('hidden');
+        hClear.classList.add('hidden');
+      }
+
+      const wPrev = document.getElementById('wifePhotoPreview');
+      const wEmoji = document.getElementById('wifePhotoEmoji');
+      const wClear = document.getElementById('clearWifePhotoBtn');
+      if (state.settings.wifePhoto) {
+        wPrev.src = state.settings.wifePhoto;
+        wPrev.classList.remove('hidden');
+        wEmoji.classList.add('hidden');
+        wClear.classList.remove('hidden');
+      } else {
+        wPrev.classList.add('hidden');
+        wEmoji.classList.remove('hidden');
+        wClear.classList.add('hidden');
+      }
+
+      openModal('profileModal');
+    }
+
+    // =========================================================================
+    // 10. EVENT LISTENERS & ZOOM LOCK
+    // =========================================================================
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      document.querySelectorAll('.tab-panel').forEach((panel) => {
+        panel.classList.toggle('hidden', panel.id !== `view-${tabName}`);
+      });
+      document.querySelectorAll('.nav-tab-btn').forEach((btn) => {
+        const active = btn.dataset.tab === tabName;
+        btn.className = active
+          ? 'nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-900'
+          : 'nav-tab-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-gray-400';
+        const span = btn.querySelector('span');
+        if (span) span.className = active ? 'text-[11px] font-bold' : 'text-[11px] font-medium';
+      });
+      renderCurrentView();
+    }
+
+    function bindEvents() {
+      // Prevent iOS Safari pinch zoom & double-tap zoom
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach((evt) => {
+        document.addEventListener(evt, (e) => e.preventDefault(), { passive: false });
+      });
+      document.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+
+      // Bottom Tab Navigation
+      document.querySelectorAll('.nav-tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      // Month Navigation
+      document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        const prev = getAdjacentYearMonth(state.year, state.month, -1);
+        state.year = prev.year;
+        state.month = prev.month;
+        renderCurrentView();
+      });
+
+      document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        const next = getAdjacentYearMonth(state.year, state.month, 1);
+        state.year = next.year;
+        state.month = next.month;
+        renderCurrentView();
+      });
+
+      document.getElementById('openMonthPickerBtn').addEventListener('click', () => {
+        state.pickerYear = state.year;
+        renderMonthPickerGrid();
+        openModal('monthPickerModal');
+      });
+
+      document.getElementById('pickerPrevYearBtn').addEventListener('click', () => {
+        state.pickerYear -= 1;
+        renderMonthPickerGrid();
+      });
+
+      document.getElementById('pickerNextYearBtn').addEventListener('click', () => {
+        state.pickerYear += 1;
+        renderMonthPickerGrid();
+      });
+
+      document.getElementById('jumpTodayMonthBtn').addEventListener('click', () => {
+        const d = new Date();
+        state.year = d.getFullYear();
+        state.month = d.getMonth() + 1;
+        closeModal('monthPickerModal');
+        renderCurrentView();
+      });
+
+      // Dashboard Cash & Next-Month Scope Toggles
+      document.querySelectorAll('.cash-scope-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.cashScope = btn.dataset.cashScope;
+          renderDashboard();
+        });
+      });
+
+      document.querySelectorAll('.next-scope-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.nextScope = btn.dataset.nextScope;
+          renderDashboard();
+        });
+      });
+
+      // Cash Income Modals
+      document.getElementById('openAddIncomeBtn').addEventListener('click', openAddIncomeModal);
+      document.getElementById('openIncomeListBtn').addEventListener('click', openIncomeListModal);
+      document.getElementById('incomeListAddBtn').addEventListener('click', () => {
+        closeModal('incomeListModal');
+        openAddIncomeModal();
+      });
+
+      document.querySelectorAll('.income-owner-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentIncomeOwner = btn.dataset.incomeOwner;
+          updateIncomeOwnerUI();
+        });
+      });
+
+      document.getElementById('incomeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('incomeFormId').value;
+        await saveIncomeRecord({
+          id: id || null,
+          owner: currentIncomeOwner,
+          amount: document.getElementById('incomeAmount').value,
+          source: document.getElementById('incomeSource').value,
+          date: document.getElementById('incomeDate').value,
+          category: document.getElementById('incomeCategory').value
+        });
+        closeModal('incomeModal');
+        showToast('현금 입금이 저장되었습니다.', 'save');
+      });
+
+      document.getElementById('deleteIncomeBtn').addEventListener('click', async () => {
+        const id = document.getElementById('incomeFormId').value;
+        if (!id) return;
+        const ok = await showConfirm('입금 내역을 삭제할까요?', '삭제하면 보유 잔액에서 제외됩니다.');
+        if (!ok) return;
+        await deleteIncomeRecord(id);
+        closeModal('incomeModal');
+        showToast('입금 내역이 삭제되었습니다.', 'delete');
+      });
+
+      // Budget Modal
+      document.getElementById('openBudgetBtn').addEventListener('click', () => {
+        document.getElementById('budgetInput').value = state.settings.monthlyBudget || 2000000;
+        openModal('budgetModal');
+      });
+
+      document.querySelectorAll('.budget-preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.getElementById('budgetInput').value = btn.dataset.budgetPreset;
+        });
+      });
+
+      document.getElementById('saveBudgetBtn').addEventListener('click', async () => {
+        const val = Math.max(0, Math.round(Number(document.getElementById('budgetInput').value) || 0));
+        await saveSettingsMeta({ monthlyBudget: val });
+        closeModal('budgetModal');
+        showToast('목표 예산이 저장되었습니다.', 'save');
+      });
+
+      // Expense List Filters & Bulk Delete
+      document.querySelectorAll('.payer-filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.payerFilter = btn.dataset.payerFilter;
+          document.querySelectorAll('.payer-filter-btn').forEach((b) => {
+            const active = b.dataset.payerFilter === state.payerFilter;
+            b.className = active
+              ? 'payer-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-gray-900 shadow-sm'
+              : 'payer-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500';
+          });
+          renderExpenseList();
+        });
+      });
+
+      document.querySelectorAll('.method-filter-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.methodFilter = btn.dataset.methodFilter;
+          document.querySelectorAll('.method-filter-btn').forEach((b) => {
+            const active = b.dataset.methodFilter === state.methodFilter;
+            b.className = active
+              ? 'method-filter-btn flex-1 py-1.5 rounded-xl text-xs font-bold bg-gray-900 text-white'
+              : 'method-filter-btn flex-1 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600';
+          });
+          renderExpenseList();
+        });
+      });
+
+      document.getElementById('categoryFilterSelect').addEventListener('change', (e) => {
+        state.categoryFilter = e.target.value;
+        renderExpenseList();
+      });
+
+      document.getElementById('toggleBulkDeleteBtn').addEventListener('click', () => {
+        state.bulkDeleteMode = true;
+        state.bulkSelectedIds.clear();
+        renderExpenseList();
+      });
+
+      document.getElementById('cancelBulkDeleteBtn').addEventListener('click', () => {
+        state.bulkDeleteMode = false;
+        state.bulkSelectedIds.clear();
+        renderExpenseList();
+      });
+
+      document.getElementById('bulkSelectAllCheckbox').addEventListener('change', (e) => {
+        const snap = getMonthSnapshot(state.year, state.month);
+        const filtered = snap.items.filter((item) => {
+          if (state.payerFilter !== '전체' && item.payer !== state.payerFilter) return false;
+          if (state.methodFilter !== '전체' && item.paymentMethod !== state.methodFilter) return false;
+          if (state.categoryFilter !== '전체' && item.category !== state.categoryFilter) return false;
+          return true;
+        });
+        state.bulkSelectedIds.clear();
+        if (e.target.checked) {
+          filtered.forEach((it) => state.bulkSelectedIds.add(it.id));
+        }
+        renderExpenseList();
+      });
+
+      document.getElementById('confirmBulkDeleteBtn').addEventListener('click', async () => {
+        const ids = Array.from(state.bulkSelectedIds);
+        if (ids.length === 0) {
+          showToast('삭제할 내역을 먼저 선택해 주세요.', 'warn');
+          return;
+        }
+        const ok = await showConfirm(`선택한 ${ids.length}건을 삭제할까요?`, '삭제한 내역은 복구할 수 없습니다.');
+        if (!ok) return;
+        for (const id of ids) {
+          await deleteExpenseRecord(id);
+        }
+        state.bulkDeleteMode = false;
+        state.bulkSelectedIds.clear();
+        renderExpenseList();
+        showToast(`${ids.length}건의 내역이 삭제되었습니다.`, 'delete');
+      });
+
+      // Manual Expense Form & Modal
+      document.getElementById('fabAddBtn').addEventListener('click', () => openAddExpenseModal(false));
+      document.getElementById('openAddInstallmentBtn').addEventListener('click', () => openAddExpenseModal(true));
+
+      document.querySelectorAll('.form-payer-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentFormPayer = btn.dataset.formPayer;
+          updateFormPayerUI();
+        });
+      });
+
+      document.querySelectorAll('.form-method-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentFormMethod = btn.dataset.formMethod;
+          updateFormPaymentMethodUI();
+        });
+      });
+
+      document.getElementById('formAmount').addEventListener('input', updateInstallmentPreview);
+      document.getElementById('formInstallmentPreset').addEventListener('change', updateInstallmentPreview);
+      document.getElementById('formInstallmentMonths').addEventListener('input', updateInstallmentPreview);
+
+      document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('formExpenseId').value;
+        const preset = document.getElementById('formInstallmentPreset').value;
+        const months = preset === 'custom'
+          ? Math.max(2, Number(document.getElementById('formInstallmentMonths').value) || 2)
+          : Number(preset) || 1;
+
+        await saveExpenseRecord({
+          id: id || null,
+          payer: currentFormPayer,
+          paymentMethod: currentFormMethod,
+          amount: document.getElementById('formAmount').value,
+          merchant: document.getElementById('formMerchant').value,
+          date: document.getElementById('formDate').value,
+          time: document.getElementById('formTime').value,
+          category: document.getElementById('formCategory').value,
+          installmentMonths: months
+        });
+        closeModal('expenseModal');
+        showToast('지출 내역이 저장되었습니다.', 'save');
+      });
+
+      document.getElementById('deleteExpenseBtn').addEventListener('click', async () => {
+        const id = document.getElementById('formExpenseId').value;
+        if (!id) return;
+        const ok = await showConfirm('이 지출 내역을 삭제할까요?', '삭제하면 다시 되돌릴 수 없어요.');
+        if (!ok) return;
+        await deleteExpenseRecord(id);
+        closeModal('expenseModal');
+        showToast('지출 내역이 삭제되었습니다.', 'delete');
+      });
+
+      // Fixed Expense Modal & Form
+      document.getElementById('openAddFixedBtn').addEventListener('click', openAddFixedModal);
+      document.querySelectorAll('.fixed-payer-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentFixedPayer = btn.dataset.fixedPayer;
+          updateFixedFormPayerUI();
+        });
+      });
+
+      document.getElementById('fixedForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('fixedFormId').value;
+        await saveFixedRecord({
+          id: id || null,
+          payer: currentFixedPayer,
+          name: document.getElementById('fixedName').value,
+          amount: document.getElementById('fixedAmount').value,
+          billingDay: document.getElementById('fixedBillingDay').value,
+          category: document.getElementById('fixedCategory').value,
+          active: true
+        });
+        closeModal('fixedModal');
+        showToast('고정 지출이 저장되었습니다.', 'save');
+      });
+
+      document.getElementById('deleteFixedBtn').addEventListener('click', async () => {
+        const id = document.getElementById('fixedFormId').value;
+        if (!id) return;
+        const ok = await showConfirm('고정 지출을 삭제할까요?', '매월 자동 합산에서 제외됩니다.');
+        if (!ok) return;
+        await deleteFixedRecord(id);
+        closeModal('fixedModal');
+        showToast('고정 지출이 삭제되었습니다.', 'delete');
+      });
+
+      // Capture Tab
+      document.querySelectorAll('.capture-payer-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.capturePayer = btn.dataset.capturePayer;
+          updateCapturePayerUI();
+        });
+      });
+
+      document.getElementById('captureFileInput').addEventListener('change', (e) => {
+        handleCaptureFilesUpload(e.target.files);
+        e.target.value = '';
+      });
+
+      document.getElementById('reviewSelectAllCheckbox').addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        state.reviewItems.forEach((it) => { it.checked = checked; });
+        renderReviewList();
+      });
+
+      document.getElementById('addManualReviewRowBtn').addEventListener('click', () => {
+        state.reviewItems.push({
+          checked: true,
+          isDuplicate: false,
+          date: getTodayISO(),
+          time: '',
+          merchant: '',
+          amount: 0,
+          paymentMethod: '카드',
+          category: '식비',
+          installmentMonths: 1,
+          payer: state.capturePayer
+        });
+        renderReviewList();
+      });
+
+      document.getElementById('resetCaptureBtn').addEventListener('click', () => {
+        state.reviewItems = [];
+        document.getElementById('captureReviewPanel').classList.add('hidden');
+        document.getElementById('captureUploadPanel').classList.remove('hidden');
+      });
+
+      document.getElementById('batchSaveBtn').addEventListener('click', async () => {
+        const selected = state.reviewItems.filter((it) => it.checked && Number(it.amount) > 0);
+        if (selected.length === 0) {
+          showToast('저장할 항목을 체크해 주세요.', 'warn');
+          return;
+        }
+
+        const toSave = [];
+        const skippedDuplicates = [];
+        const remainingReview = [];
+
+        for (const item of state.reviewItems) {
+          if (!item.checked || Number(item.amount) <= 0) {
+            remainingReview.push(item);
+            continue;
+          }
+          const dupNow = isDuplicateCandidate(item, toSave);
+          if (dupNow && !item.isDuplicate) {
+            item.isDuplicate = true;
+            item.checked = false;
+            skippedDuplicates.push(item);
+            remainingReview.push(item);
+          } else {
+            toSave.push(item);
+          }
+        }
+
+        for (const item of toSave) {
+          await saveExpenseRecord(item);
+        }
+
+        if (skippedDuplicates.length > 0) {
+          state.reviewItems = remainingReview;
+          renderReviewList();
+          showToast(`중복 의심 ${skippedDuplicates.length}건 제외, ${toSave.length}건 저장됨`, 'warn');
+        } else {
+          state.reviewItems = [];
+          document.getElementById('captureReviewPanel').classList.add('hidden');
+          document.getElementById('captureUploadPanel').classList.remove('hidden');
+          showToast(`${toSave.length}건 일괄 저장 완료!`, 'save');
+          switchTab('list');
+        }
+      });
+
+      // Header Actions: Security / My Role / Settings / Profile
+      document.getElementById('openMyRoleBtn').addEventListener('click', () => {
+        updateMyRoleHeaderUI();
+        renderSecurityModal();
+        openModal('myRoleModal');
+      });
+
+      document.querySelectorAll('.my-role-option-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setMyRole(btn.dataset.myRole, false);
+          closeModal('myRoleModal');
+        });
+      });
+
+      document.getElementById('openSettingsBtn').addEventListener('click', () => {
+        document.getElementById('roomCodeInput').value = state.roomCode;
+        openModal('settingsModal');
+      });
+
+      document.getElementById('copyRoomCodeBtn').addEventListener('click', (e) => {
+        const input = document.getElementById('roomCodeInput');
+        input.select();
+        document.execCommand('copy');
+        const btn = e.currentTarget;
+        btn.classList.add('btn-copied-flash');
+        setTimeout(() => btn.classList.remove('btn-copied-flash'), 900);
+        showToast('방 코드가 복사되었습니다.', 'copy');
+      });
+
+      document.getElementById('applyRoomCodeBtn').addEventListener('click', () => {
+        const code = document.getElementById('roomCodeInput').value.trim();
+        if (!code) return;
+        state.roomCode = code;
+        safeSetStorage('couple_room_code', code);
+        if (state.useCloud && db) connectRoomListeners();
+        closeModal('settingsModal');
+        showToast(`'${code}' 방에 연결되었습니다.`, 'save');
+      });
+
+      document.getElementById('settingsToProfileBtn').addEventListener('click', () => {
+        closeModal('settingsModal');
+        openProfileModal();
+      });
+
+      document.getElementById('settingsToSecurityBtn').addEventListener('click', () => {
+        closeModal('settingsModal');
+        renderSecurityModal();
+        openModal('securityModal');
+      });
+
+      document.getElementById('headerAvatarsWrap').addEventListener('click', openProfileModal);
+      document.getElementById('coupleBannerCard').addEventListener('click', openProfileModal);
+
+      // Profile Photo Upload & Save
+      let draftProfile = null;
+      document.getElementById('bannerPhotoInput').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const url = await resizeImageToDataUrl(file, 960, 0.78);
+        draftProfile = { ...(draftProfile || {}), bannerPhoto: url };
+        const prev = document.getElementById('bannerPhotoPreview');
+        prev.src = url;
+        prev.classList.remove('hidden');
+        document.getElementById('bannerPhotoPlaceholder').classList.add('hidden');
+        document.getElementById('clearBannerPhotoBtn').classList.remove('hidden');
+      });
+
+      document.getElementById('clearBannerPhotoBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        draftProfile = { ...(draftProfile || {}), bannerPhoto: '' };
+        document.getElementById('bannerPhotoPreview').classList.add('hidden');
+        document.getElementById('bannerPhotoPlaceholder').classList.remove('hidden');
+        document.getElementById('clearBannerPhotoBtn').classList.add('hidden');
+      });
+
+      document.getElementById('husbandPhotoInput').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const url = await resizeImageToDataUrl(file, 320, 0.8);
+        draftProfile = { ...(draftProfile || {}), husbandPhoto: url };
+        const prev = document.getElementById('husbandPhotoPreview');
+        prev.src = url;
+        prev.classList.remove('hidden');
+        document.getElementById('husbandPhotoEmoji').classList.add('hidden');
+        document.getElementById('clearHusbandPhotoBtn').classList.remove('hidden');
+      });
+
+      document.getElementById('clearHusbandPhotoBtn').addEventListener('click', () => {
+        draftProfile = { ...(draftProfile || {}), husbandPhoto: '' };
+        document.getElementById('husbandPhotoPreview').classList.add('hidden');
+        document.getElementById('husbandPhotoEmoji').classList.remove('hidden');
+        document.getElementById('clearHusbandPhotoBtn').classList.add('hidden');
+      });
+
+      document.getElementById('wifePhotoInput').addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const url = await resizeImageToDataUrl(file, 320, 0.8);
+        draftProfile = { ...(draftProfile || {}), wifePhoto: url };
+        const prev = document.getElementById('wifePhotoPreview');
+        prev.src = url;
+        prev.classList.remove('hidden');
+        document.getElementById('wifePhotoEmoji').classList.add('hidden');
+        document.getElementById('clearWifePhotoBtn').classList.remove('hidden');
+      });
+
+      document.getElementById('clearWifePhotoBtn').addEventListener('click', () => {
+        draftProfile = { ...(draftProfile || {}), wifePhoto: '' };
+        document.getElementById('wifePhotoPreview').classList.add('hidden');
+        document.getElementById('wifePhotoEmoji').classList.remove('hidden');
+        document.getElementById('clearWifePhotoBtn').classList.add('hidden');
+      });
+
+      document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+        const title = document.getElementById('profileTitleInput').value.trim() || '우리 부부 가계부';
+        await saveSettingsMeta({ coupleTitle: title, ...(draftProfile || {}) });
+        draftProfile = null;
+        closeModal('profileModal');
+        showToast('부부 프로필이 저장되었습니다.', 'save');
+      });
+
+      // Security Modal & Auth Gate
+      document.getElementById('openSecurityBtn').addEventListener('click', () => {
+        renderSecurityModal();
+        openModal('securityModal');
+      });
+
+      ['secHusbandEmail', 'secWifeEmail'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', () => {
+          state.security.husbandEmail = document.getElementById('secHusbandEmail').value.trim();
+          state.security.wifeEmail = document.getElementById('secWifeEmail').value.trim();
+          document.getElementById('serverRulesPreview').textContent = buildFirestoreRulesSnippet();
+        });
+      });
+
+      document.getElementById('copyRulesBtn').addEventListener('click', (e) => {
+        const rulesText = buildFirestoreRulesSnippet();
+        const ta = document.createElement('textarea');
+        ta.value = rulesText;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const btn = e.currentTarget;
+        btn.classList.add('btn-copied-flash');
+        setTimeout(() => btn.classList.remove('btn-copied-flash'), 900);
+        showToast('보안 규칙이 복사되었습니다.', 'copy');
+      });
+
+      document.getElementById('saveSecurityBtn').addEventListener('click', async () => {
+        await saveSecurityMeta({
+          lockEnabled: document.getElementById('secLockToggle').checked,
+          husbandEmail: document.getElementById('secHusbandEmail').value.trim(),
+          wifeEmail: document.getElementById('secWifeEmail').value.trim()
+        });
+        closeModal('securityModal');
+        showToast('보안 설정이 저장되었습니다.', 'lock');
+      });
+
+      const handleLogout = async () => {
+        closeModal('securityModal');
+        clearCachedAuthSession();
+        clearAutoLoginCredential();
+        if (IS_LIVE_PROD && auth) {
+          await signOut(auth).catch(() => {});
+        }
+        state.authUser = null;
+        clearSubscriptions();
+        renderAuthGate();
+        showToast('로그아웃되었습니다.', 'lock');
+      };
+      document.getElementById('secLogoutBtn').addEventListener('click', handleLogout);
+      document.getElementById('authSwitchAccountBtn').addEventListener('click', handleLogout);
+
+      // Google & Email Sign-in
+      document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+        showAuthError('');
+        if (!IS_LIVE_PROD || !auth) {
+          completeAuthSession(state.security.husbandEmail || 'husband@example.com', 'google');
+          return;
+        }
+        try {
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          await signInWithPopup(auth, provider);
+        } catch (err) {
+          if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/cancelled-popup-request') {
+            const provider = new GoogleAuthProvider();
+            await signInWithRedirect(auth, provider).catch((e2) => showAuthError(e2.message));
+          } else if (err?.code === 'auth/unauthorized-domain') {
+            showAuthError(`Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 '${window.location.hostname}'을 추가해 주세요.`);
+          } else {
+            showAuthError(err?.message || 'Google 로그인에 실패했습니다.');
+          }
+        }
+      });
+
+      document.getElementById('emailAuthForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showAuthError('');
+        const email = document.getElementById('authEmailInput').value.trim();
+        const pw = document.getElementById('authPasswordInput').value;
+        const keepAuto = document.getElementById('autoLoginCheckbox')?.checked !== false;
+        if (!IS_LIVE_PROD || !auth) {
+          if (keepAuto) saveAutoLoginCredential(email, pw);
+          else clearAutoLoginCredential();
+          completeAuthSession(email, 'email');
+          return;
+        }
+        try {
+          await signInWithEmailAndPassword(auth, email, pw);
+          if (keepAuto) saveAutoLoginCredential(email, pw);
+          else clearAutoLoginCredential();
+        } catch (err) {
+          showAuthError(`로그인 실패: ${err?.message || '이메일과 비밀번호를 확인해 주세요.'}`);
+        }
+      });
+
+      document.getElementById('emailSignUpBtn').addEventListener('click', async () => {
+        showAuthError('');
+        const email = document.getElementById('authEmailInput').value.trim();
+        const pw = document.getElementById('authPasswordInput').value;
+        const keepAuto = document.getElementById('autoLoginCheckbox')?.checked !== false;
+        if (!email || pw.length < 6) {
+          showAuthError('이메일과 6자 이상의 비밀번호를 입력해 주세요.');
+          return;
+        }
+        if (!IS_LIVE_PROD || !auth) {
+          if (keepAuto) saveAutoLoginCredential(email, pw);
+          else clearAutoLoginCredential();
+          completeAuthSession(email, 'email');
+          return;
+        }
+        try {
+          await createUserWithEmailAndPassword(auth, email, pw);
+          if (keepAuto) saveAutoLoginCredential(email, pw);
+          else clearAutoLoginCredential();
+        } catch (err) {
+          showAuthError(`회원가입 실패: ${err?.message || '다시 시도해 주세요.'}`);
+        }
+      });
+
+      // Preview Demo Quick Login Buttons
+      document.getElementById('demoHusbandBtn').addEventListener('click', () => {
+        completeAuthSession(state.security.husbandEmail || 'husband@couple.app', 'demo');
+      });
+      document.getElementById('demoWifeBtn').addEventListener('click', () => {
+        completeAuthSession(state.security.wifeEmail || 'wife@couple.app', 'demo');
+      });
+      document.getElementById('demoStrangerBtn').addEventListener('click', () => {
+        state.security.lockEnabled = true;
+        if (!state.security.husbandEmail && !state.security.wifeEmail) {
+          state.security.husbandEmail = 'husband@couple.app';
+          state.security.wifeEmail = 'wife@couple.app';
+        }
+        completeAuthSession('stranger@outsider.com', 'demo');
+      });
+
+      // Confirm Modal Buttons
+      document.getElementById('confirmCancelBtn').addEventListener('click', () => {
+        closeModal('confirmModal');
+        if (confirmResolver) confirmResolver(false);
+      });
+      document.getElementById('confirmOkBtn').addEventListener('click', () => {
+        closeModal('confirmModal');
+        if (confirmResolver) confirmResolver(true);
+      });
+    }
+
+    // =========================================================================
+    // 11. INITIALIZATION
+    // =========================================================================
+    async function initStorage() {
+      try {
+        if (IS_LIVE_PROD) {
+          fbApp = initializeApp(DEPLOY_CONFIG.firebaseConfig);
+          auth = getAuth(fbApp);
+          db = getFirestore(fbApp);
+          state.useCloud = true;
+
+          // Explicitly persist login session in localStorage across iOS PWA restarts
+          await setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+          // If cached session exists, connect listeners immediately so data loads without login flicker
+          if (state.authUser && isEmailAllowed(state.authUser.email)) {
+            updateSyncBadge(true);
+            connectRoomListeners();
+          }
+
+          // Handle Google Redirect Login result (if used on iOS PWA)
+          getRedirectResult(auth).catch((err) => {
+            if (err?.code) showAuthError(`로그인 오류: ${err.code}`);
+          });
+
+          let initialAuthChecked = false;
+          onAuthStateChanged(auth, async (user) => {
+            if (user && user.email) {
+              initialAuthChecked = true;
+              state.userId = user.uid;
+              const provider = user.providerData?.[0]?.providerId === 'google.com' ? 'google' : 'email';
+              state.authUser = { email: normalizeEmail(user.email), provider };
+              saveCachedAuthSession(user.email, provider);
+              autoDetectRoleFromEmail(user.email);
+              renderSecurityModal();
+              renderAuthGate();
+              if (isEmailAllowed(user.email)) {
+                updateSyncBadge(true);
+                connectRoomListeners();
+              } else {
+                updateSyncBadge(false);
+                clearSubscriptions();
+              }
+            } else {
+              // If iOS PWA cleared Firebase session, silently re-authenticate using saved auto-login credential
+              const savedCred = loadAutoLoginCredential();
+              if (!initialAuthChecked && savedCred) {
+                initialAuthChecked = true;
+                try {
+                  await signInWithEmailAndPassword(auth, savedCred.email, savedCred.password);
+                  return;
+                } catch {
+                  clearAutoLoginCredential();
+                }
+              }
+
+              // Give iOS Safari IndexedDB/localStorage up to 1.2s on cold boot before clearing session
+              if (!initialAuthChecked && state.authUser) {
+                initialAuthChecked = true;
+                setTimeout(() => {
+                  if (!auth.currentUser) {
+                    state.authUser = null;
+                    state.userId = null;
+                    clearCachedAuthSession();
+                    updateSyncBadge(false);
+                    clearSubscriptions();
+                    renderAuthGate();
+                  }
+                }, 1200);
+                return;
+              }
+              initialAuthChecked = true;
+              state.authUser = null;
+              state.userId = null;
+              clearCachedAuthSession();
+              updateSyncBadge(false);
+              clearSubscriptions();
+              renderAuthGate();
+            }
+          });
+          return;
+        }
+
+        // Preview / Sandbox Mode: Use Demo In-Memory Data
+        state.useCloud = false;
+        seedDemoData();
+        updateSyncBadge(false);
+        renderCurrentView();
+      } catch (err) {
+        console.warn('Init storage fallback:', err);
+        state.useCloud = false;
+        seedDemoData();
+        updateSyncBadge(false);
+        renderCurrentView();
+      }
+    }
+
+    // Boot Application
+    generateCoupleAppIcon();
+    updateMyRoleHeaderUI();
+    updateCapturePayerUI();
+    applyProfileVisuals();
+    bindEvents();
+    renderSecurityModal();
+    renderAuthGate();
+    renderCurrentView();
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+    initStorage();
+  </script>
+</body>
+</html>
