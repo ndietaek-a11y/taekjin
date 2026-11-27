@@ -1922,10 +1922,12 @@
 
         const startIdx = ey * 12 + (em - 1);
         const rounds = Math.max(1, Math.round(Number(exp.installmentMonths) || 1));
-        const diff = targetIdx - startIdx;
+        const isInst = rounds > 1;
+        // Installments begin billing from the NEXT month (startIdx + 1)
+        const effectiveStartIdx = isInst ? startIdx + 1 : startIdx;
+        const diff = targetIdx - effectiveStartIdx;
         if (diff < 0 || diff >= rounds) continue;
 
-        const isInst = rounds > 1;
         const rawAmt = Math.max(0, Math.round(Number(exp.amount) || 0));
         const effAmt = isInst ? Math.round(rawAmt / rounds) : rawAmt;
         const payer = normalizePayer(exp.payer);
@@ -2694,22 +2696,56 @@ service cloud.firestore {
       });
     }
 
+    function evaluateFakeSuspect(rawItem) {
+      const rawDate = String(rawItem.date || '').trim();
+      const rawMerch = String(rawItem.merchant || '').trim();
+      const amt = Math.round(Number(rawItem.amount) || 0);
+
+      if (rawItem.isSuspectFake === true) return true;
+      if (amt <= 0) return true;
+      // Missing explicit date in screenshot
+      if (!rawDate || !/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) return true;
+      // Missing merchant/recipient or generic placeholder without real target
+      if (!rawMerch || rawMerch.length < 2) return true;
+      const fakeMerchPattern = /^(기타|미상|내역없음|가맹점없음|잔액|계좌잔액|현재잔액|총이용금액|이용금액|합계|총액|결제예정금액|청구금액|월이용금액|\d[\d,\s원]*)$/;
+      if (fakeMerchPattern.test(rawMerch.replace(/\s+/g, ''))) return true;
+      if (/잔액|총\s*이용|이용\s*합계|결제\s*예정|최근\s*\d+일/.test(rawMerch)) return true;
+      return false;
+    }
+
+    function sortReviewItemsPriority() {
+      // Order: 1. Fake Suspect -> 2. Duplicate Suspect -> 3. Normal
+      state.reviewItems.sort((a, b) => {
+        const rankA = a.isFakeSuspect ? 0 : a.isDuplicate ? 1 : 2;
+        const rankB = b.isFakeSuspect ? 0 : b.isDuplicate ? 1 : 2;
+        return rankA - rankB;
+      });
+    }
+
     async function analyzeSingleReceiptImage(dataUrl) {
       const apiKey = DEPLOY_CONFIG.geminiApiKey;
       const base64Data = dataUrl.split(',')[1];
       const mimeType = dataUrl.split(';')[0].replace('data:', '') || 'image/jpeg';
 
-      const prompt = `당신은 한국 부부 가계부 정산 전문가입니다. 업로드된 카드 승인 내역, 은행 계좌이체 내역, 쇼핑몰 결제 내역 스크린샷에서 모든 지출 항목을 추출하세요.
+      const prompt = `당신은 한국 부부 가계부 정산 전문가입니다. 업로드된 카드 승인 내역, 은행 계좌이체 내역, 쇼핑몰 결제 내역 스크린샷에서 **실제 개별 결제/출금 내역만** 정확히 추출하세요.
+
+[매우 중요한 제외 및 판별 규칙]
+1. 화면 상단의 '총 이용금액', '30일간 이용금액', '결제예정금액', '합계', 그리고 은행 계좌 거래내역 옆에 작게 적힌 '잔액(남은 잔액)' 숫자는 절대 결제 내역으로 뽑지 마세요.
+2. 결제 날짜가 이미지에 실제로 적혀 있지 않으면 절대 오늘 날짜나 임의의 날짜를 지어내지 말고 "date": "" (빈 문자열)로 두세요.
+3. 가맹점명이나 이체 대상(받는 분)이 이미지에 없으면 절대 '기타'라고 지어내지 말고 "merchant": "" (빈 문자열)로 두세요.
+4. 날짜나 가맹점 없이 숫자만 덩그러니 있거나 상단 요약/잔액으로 의심되는 항목은 "isSuspectFake": true 로 표시하세요.
+
 반드시 아래 JSON 배열 형식으로만 응답하세요(마크다운 백틱 없이 순수 JSON만 출력):
 [
   {
-    "date": "YYYY-MM-DD (연도가 안 보이면 ${state.year}년 사용)",
+    "date": "YYYY-MM-DD (이미지에 날짜가 안 보이면 반드시 빈 문자열 '')",
     "time": "HH:MM (24시간 형식, 시간 정보가 없으면 빈 문자열 '')",
-    "merchant": "가맹점명 또는 이체 대상",
-    "amount": 숫자(원 단위 정수, 취소건은 제외),
+    "merchant": "가맹점명 또는 이체 대상 (안 보이면 빈 문자열 '')",
+    "amount": 숫자(원 단위 정수, 취소건·잔액·총합계는 제외),
     "paymentMethod": "카드 또는 현금 (계좌이체/출금/현금영수증이면 '현금', 신용/체크카드면 '카드')",
     "category": "다음 중 정확히 하나: 식비, 카페·간식, 장보기·생활, 교통·차량, 쇼핑·의류, 주거·관리, 의료·건강, 문화·여행, 경조사·선물, 구독·통신, 기타",
-    "installmentMonths": 숫자(일시불이면 1, 3개월 할부면 3 등)
+    "installmentMonths": 숫자(일시불이면 1, 3개월 할부면 3 등),
+    "isSuspectFake": boolean(가맹점이나 날짜가 없거나 잔액·총합계 숫자일 가능성이 있으면 true, 정상 개별 결제면 false)
   }
 ]`;
 
@@ -2787,21 +2823,25 @@ service cloud.firestore {
           const items = await analyzeSingleReceiptImage(dataUrl);
 
           for (const raw of items) {
+            const isFake = evaluateFakeSuspect(raw);
+            const cleanDate = String(raw.date || '').trim();
+            const cleanMerch = String(raw.merchant || '').trim();
             const normItem = {
-              date: raw.date || getTodayISO(),
+              date: /^\d{4}-\d{2}-\d{2}$/.test(cleanDate) ? cleanDate : getTodayISO(),
               time: String(raw.time || '').trim(),
-              merchant: String(raw.merchant || '사용처').trim(),
+              merchant: cleanMerch || '가맹점 미확인',
               amount: Math.max(0, Math.round(Number(raw.amount) || 0)),
               paymentMethod: normalizeMethod(raw.paymentMethod),
               category: CATEGORY_MAP[raw.category] ? raw.category : '기타',
               installmentMonths: Math.max(1, Math.min(60, Math.round(Number(raw.installmentMonths) || 1))),
               payer: state.capturePayer
             };
-            const dup = isDuplicateCandidate(normItem, collected);
+            const dup = !isFake && isDuplicateCandidate(normItem, collected);
             collected.push({
               ...normItem,
-              checked: !dup,
-              isDuplicate: dup
+              isFakeSuspect: isFake,
+              isDuplicate: dup,
+              checked: !isFake && !dup
             });
           }
         } catch (err) {
@@ -2825,9 +2865,16 @@ service cloud.firestore {
       }
 
       state.reviewItems = collected;
+      sortReviewItemsPriority();
       reviewPanel.classList.remove('hidden');
       renderReviewList();
-      showToast(`${collected.length}건의 내역을 추출했습니다!`, 'ai');
+      const fakeCnt = collected.filter((x) => x.isFakeSuspect).length;
+      const dupCnt = collected.filter((x) => x.isDuplicate).length;
+      if (fakeCnt > 0 || dupCnt > 0) {
+        showToast(`${collected.length}건 추출 (가짜의심 ${fakeCnt} · 중복 ${dupCnt})`, 'warn');
+      } else {
+        showToast(`${collected.length}건의 내역을 추출했습니다!`, 'ai');
+      }
     }
 
     function renderReviewList() {
@@ -2849,15 +2896,27 @@ service cloud.firestore {
           `<option value="${c.name}" ${item.category === c.name ? 'selected' : ''}>${c.emoji} ${c.name}</option>`
         ).join('');
 
+        const cardBorderClass = item.isFakeSuspect
+          ? 'border-red-400 bg-red-50/40'
+          : item.isDuplicate
+          ? 'border-red-300 bg-rose-50/35'
+          : 'border-gray-100';
+
+        const statusBadgeHtml = item.isFakeSuspect
+          ? `<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-extrabold">❗ 가짜내역 의심</span>`
+          : item.isDuplicate
+          ? `<span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-extrabold">❗ 중복 의심</span>`
+          : '';
+
         return `
-          <div class="bg-white rounded-2xl p-3.5 border ${item.isDuplicate ? 'border-amber-300 bg-amber-50/30' : 'border-gray-100'} shadow-sm space-y-2.5">
+          <div class="bg-white rounded-2xl p-3.5 border ${cardBorderClass} shadow-sm space-y-2.5">
             <div class="flex items-center justify-between gap-2">
-              <label class="flex items-center gap-2 cursor-pointer">
+              <label class="flex items-center gap-2 cursor-pointer flex-wrap">
                 <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.updateReviewItem(${idx}, 'checked', this.checked)" class="w-4 h-4 rounded accent-gray-900" />
                 <span class="text-xs font-bold text-gray-800">#${idx + 1}</span>
-                ${item.isDuplicate ? `<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">⚠️ 중복 의심 (체크 시 강제저장)</span>` : ''}
+                ${statusBadgeHtml}
               </label>
-              <button type="button" onclick="window.removeReviewItem(${idx})" class="text-xs text-gray-400 hover:text-red-500 px-1.5 py-0.5">삭제</button>
+              <button type="button" onclick="window.removeReviewItem(${idx})" class="text-xs text-gray-400 hover:text-red-500 px-1.5 py-0.5 shrink-0">삭제</button>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -2900,7 +2959,13 @@ service cloud.firestore {
       if (!state.reviewItems[idx]) return;
       state.reviewItems[idx][field] = val;
       if (field !== 'checked') {
-        state.reviewItems[idx].isDuplicate = isDuplicateCandidate(state.reviewItems[idx]);
+        state.reviewItems[idx].isFakeSuspect = evaluateFakeSuspect({
+          date: state.reviewItems[idx].date,
+          merchant: state.reviewItems[idx].merchant === '가맹점 미확인' ? '' : state.reviewItems[idx].merchant,
+          amount: state.reviewItems[idx].amount
+        });
+        state.reviewItems[idx].isDuplicate = !state.reviewItems[idx].isFakeSuspect && isDuplicateCandidate(state.reviewItems[idx]);
+        sortReviewItemsPriority();
       }
       renderReviewList();
     };
